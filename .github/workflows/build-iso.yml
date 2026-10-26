@@ -1,16 +1,16 @@
-name: Build BOLT OS ISO
+name: Build and publish BOLT OS ISO
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: ISO version label
+        description: Release version label (use a new version for a fresh release)
         required: true
         default: 0.1.0-dev
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -37,7 +37,7 @@ jobs:
           BOLT_VERSION: ${{ inputs.version }}
         run: bash ./build.sh
 
-      - name: Upload ISO and checksums
+      - name: Upload ISO and checksums as a workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: bolt-os-${{ inputs.version }}-x86_64
@@ -46,3 +46,18 @@ jobs:
             out/SHA256SUMS
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish ISO in GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: BOLT OS ${{ inputs.version }}
+          target_commitish: main
+          prerelease: true
+          draft: false
+          generate_release_notes: true
+          files: |
+            out/*.iso
+            out/SHA256SUMS
+          fail_on_unmatched_files: true
+          overwrite_files: true
