@@ -31,32 +31,29 @@ fi
 mkdir -p "$OUT_DIR"
 cp -a "$ARCHISO_PROFILE/." "$PROFILE_DIR/"
 
-# Keep upstream boot configuration and tools, changing only BOLT metadata.
+# Keep upstream boot configuration and tools, changing BOLT metadata only.
 sed -i -E 's/^iso_name=.*/iso_name="bolt-os"/' "$PROFILE_DIR/profiledef.sh"
 sed -i -E 's/^iso_label=.*/iso_label="BOLT_OS"/' "$PROFILE_DIR/profiledef.sh"
-sed -i -E 's|^iso_publisher=.*|iso_publisher="BOLT-GAMING"| ' "$PROFILE_DIR/profiledef.sh"
+sed -i -E 's|^iso_publisher=.*|iso_publisher="BOLT-GAMING"|' "$PROFILE_DIR/profiledef.sh"
 sed -i -E 's/^iso_application=.*/iso_application="BOLT OS Live Prototype"/' "$PROFILE_DIR/profiledef.sh"
 sed -i -E "s/^iso_version=.*/iso_version=\"$BOLT_VERSION\"/" "$PROFILE_DIR/profiledef.sh"
 sed -i -E 's/^install_dir=.*/install_dir="bolt"/' "$PROFILE_DIR/profiledef.sh"
 
 PKG_FILE="$PROFILE_DIR/packages.$ARCH"
 if [[ ! -f "$PKG_FILE" ]]; then
-  PKG_FILE="$PROFILE_DIR/packages.arch"
-fi
-if [[ ! -f "$PKG_FILE" ]]; then
-  printf 'Could not find the package list in the supplied Archiso profile.\n' >&2
+  printf 'Could not find packages.%s in the supplied Archiso profile.\n' "$ARCH" >&2
   exit 1
 fi
 
-# Union the upstream live-image packages with BOLT's explicitly listed set.
-# Sort and de-duplicate to avoid duplicate pacman targets.
+# Union upstream live-image utilities with BOLT's desktop and gaming set.
+# Sorting and de-duplicating prevents duplicate pacman targets.
 TMP_PACKAGES="$(mktemp)"
 grep -hEv '^[[:space:]]*(#|$)' "$PKG_FILE" "$ROOT_DIR/packages.x86_64" |
   LC_ALL=C sort -u > "$TMP_PACKAGES"
 cat "$TMP_PACKAGES" > "$PKG_FILE"
 rm -f -- "$TMP_PACKAGES"
 
-# Steam and its 32-bit Vulkan dependencies live in multilib.
+# Steam and its 32-bit Vulkan dependencies are in multilib.
 if grep -q '^#\[multilib\]' "$PROFILE_DIR/pacman.conf"; then
   sed -i '/^#\[multilib\]/,/^$/ s/^#//' "$PROFILE_DIR/pacman.conf"
 elif ! grep -q '^\[multilib\]' "$PROFILE_DIR/pacman.conf"; then
@@ -73,24 +70,54 @@ if [[ -d "$ROOT_DIR/airootfs" ]]; then
   cp -a "$ROOT_DIR/airootfs/." "$PROFILE_DIR/airootfs/"
 fi
 
-# Generate systemd enablement links inside the profile so the live session
-# starts networking, Bluetooth, and the KDE display manager.
-mkdir -p "$PROFILE_DIR/airootfs/etc/systemd/system/multi-user.target.wants"
-ln -sfn /usr/lib/systemd/system/NetworkManager.service \
-  "$PROFILE_DIR/airootfs/etc/systemd/system/multi-user.target.wants/NetworkManager.service"
-ln -sfn /usr/lib/systemd/system/bluetooth.service \
-  "$PROFILE_DIR/airootfs/etc/systemd/system/multi-user.target.wants/bluetooth.service"
-ln -sfn /usr/lib/systemd/system/sddm.service \
-  "$PROFILE_DIR/airootfs/etc/systemd/system/display-manager.service"
+# Include the simple, high-contrast BOLT wallpaper in the live image.
+if [[ -f "$ROOT_DIR/branding/bolt-wallpaper.svg" ]]; then
+  mkdir -p "$PROFILE_DIR/airootfs/usr/share/wallpapers"
+  install -m 0644 "$ROOT_DIR/branding/bolt-wallpaper.svg" \
+    "$PROFILE_DIR/airootfs/usr/share/wallpapers/BOLT.svg"
+fi
 
-# The live user's passwordless sudo rule is intentionally limited to the
-# ephemeral live environment, never copied by an installer to a disk system.
+# Use NetworkManager in the KDE session rather than running two network
+# managers in parallel. The upstream ISO links systemd-networkd/resolved.
+SYSTEMD_TREE="$PROFILE_DIR/airootfs/etc/systemd/system"
+mkdir -p "$SYSTEMD_TREE/multi-user.target.wants"
+find "$SYSTEMD_TREE" -type l \( -name 'systemd-networkd.service' \
+  -o -name 'systemd-resolved.service' \
+  -o -name 'systemd-networkd-wait-online.service' \) -delete
+rm -f "$PROFILE_DIR/airootfs/etc/resolv.conf"
+ln -s /run/NetworkManager/resolv.conf "$PROFILE_DIR/airootfs/etc/resolv.conf"
+
+# Enable only the services needed to start the live desktop smoothly.
+ln -sfn /usr/lib/systemd/system/NetworkManager.service \
+  "$SYSTEMD_TREE/multi-user.target.wants/NetworkManager.service"
+ln -sfn /usr/lib/systemd/system/bluetooth.service \
+  "$SYSTEMD_TREE/multi-user.target.wants/bluetooth.service"
+ln -sfn /etc/systemd/system/bolt-live-user.service \
+  "$SYSTEMD_TREE/multi-user.target.wants/bolt-live-user.service"
+ln -sfn /usr/lib/systemd/system/sddm.service \
+  "$SYSTEMD_TREE/display-manager.service"
+
+# Set the passwordless sudo rule's required restrictive permissions. It is
+# present only on the ephemeral live image and is not a disk-install policy.
 if grep -q '^file_permissions=(' "$PROFILE_DIR/profiledef.sh"; then
   sed -i '/^)/i\  ["/etc/sudoers.d/10-bolt-live"]="0:0:440"' "$PROFILE_DIR/profiledef.sh"
 fi
 
 printf 'Building BOLT OS %s from Archiso profile: %s\n' "$BOLT_VERSION" "$ARCHISO_PROFILE"
 mkarchiso -v -w "$WORK_DIR" -o "$OUT_DIR" "$PROFILE_DIR"
+
+mapfile -t ISO_FILES < <(find "$OUT_DIR" -maxdepth 1 -type f -name '*.iso' -printf '%f\n' | sort)
+if (("${#ISO_FILES[@]}" == 0)); then
+  printf 'Build command returned successfully but no ISO was found in %s.\n' "$OUT_DIR" >&2
+  exit 1
+fi
+(
+  cd "$OUT_DIR"
+  : > SHA256SUMS
+  for iso in "${ISO_FILES[@]}"; do
+    sha256sum "$iso" >> SHA256SUMS
+  done
+)
 
 printf '\nBuild completed. Output files:\n'
 find "$OUT_DIR" -maxdepth 1 -type f -printf '%f (%s bytes)\n' | sort
