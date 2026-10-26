@@ -14,6 +14,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
+if [[ ! "$BOLT_VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+  printf 'Invalid BOLT_VERSION: use only letters, numbers, dot, underscore, and hyphen.\n' >&2
+  exit 2
+fi
 if [[ "$ARCH" != "x86_64" ]]; then
   printf 'BOLT OS prototype currently targets x86_64; detected: %s\n' "$ARCH" >&2
   exit 1
