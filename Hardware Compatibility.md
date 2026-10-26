@@ -2,25 +2,28 @@
 
 ## Principle
 
-Aim for broad compatibility by using upstream Linux support, reliable detection, and clear fallbacks. Do not promise universal support: hardware vendors, firmware, kernel versions, proprietary drivers, laptop hybrid graphics, and individual games all impose limits.
+Aim for broad compatibility by using upstream Linux support, reliable detection, and clear fallbacks. Do not promise universal support: vendors, firmware, kernel versions, proprietary drivers, laptop hybrid graphics, and individual games all impose limits.
 
 ## Initial target
 
 - x86-64 desktop and laptop PCs.
 - UEFI systems as the primary test target.
 - Intel and AMD integrated/discrete graphics through supported kernel and Mesa stacks.
-- NVIDIA graphics through a documented driver-selection path.
-- Common wired and Bluetooth input devices, audio devices, Wi-Fi and Ethernet adapters supported by the selected kernel/firmware packages.
+- NVIDIA basic desktop and Vulkan fallback paths through Nouveau where supported; proprietary NVIDIA drivers remain a separate path to validate.
+- Common wired and Bluetooth input devices, audio devices, Wi-Fi and Ethernet adapters supported by the chosen kernel and firmware.
 
 ## Graphics strategy
 
 ### Intel and AMD
-Validate kernel drivers, Mesa, Vulkan loader, and 32-bit graphics libraries needed by relevant gaming workflows.
+
+The initial prototype includes Mesa, Intel/AMD Vulkan drivers, and the corresponding 32-bit Vulkan libraries for common gaming workflows. These packages still need to be exercised on real hardware.
 
 ### NVIDIA
-Choose a driver strategy based on supported GPUs, kernel updates, and the current Arch packaging landscape. Document secure boot and hybrid graphics implications where relevant. Do not assume one driver branch supports every NVIDIA GPU.
+
+The prototype includes the open-source Nouveau Vulkan driver path, including 32-bit libraries for compatible cards. That does not guarantee good performance on every NVIDIA GPU. A proprietary NVIDIA driver choice must match the GPU generation and kernel packaging; test Secure Boot and laptop hybrid-graphics behavior separately.
 
 ### Fallbacks
+
 If hardware acceleration is unavailable, show a useful diagnostic and allow a safe desktop fallback where possible. Avoid silently presenting software rendering as normal gaming performance.
 
 ## Compatibility checklist
@@ -39,7 +42,7 @@ If hardware acceleration is unavailable, show a useful diagnostic and allow a sa
 ## Support tiers to define
 
 - **Tested:** verified on a named hardware configuration and release.
-- **Expected:** likely to work through upstream support, but not yet tested by the project.
+- **Expected:** likely to work through upstream support, but not yet tested.
 - **Known issue:** limitation is documented with a workaround if available.
 - **Unsupported:** known blocker or outside the project's declared scope.
 
