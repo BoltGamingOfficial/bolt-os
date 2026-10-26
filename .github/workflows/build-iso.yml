@@ -29,7 +29,15 @@ jobs:
       options: --privileged
     steps:
       - name: Install build tools in the Arch container
-        run: pacman -Syu --noconfirm --needed archiso git shellcheck
+        run: |
+          pacman -Syu --noconfirm --needed archiso git shellcheck
+          # The ISO build needs room for both the staged filesystem and final
+          # ISO. Remove downloaded package archives after installing tools.
+          pacman -Scc --noconfirm
+          echo "Disk space after installing build tools and cleaning package cache:"
+          df -h /
+          df -h "$GITHUB_WORKSPACE" || true
+          df -i /
 
       - name: Check out source
         uses: actions/checkout@v4
@@ -44,7 +52,11 @@ jobs:
       - name: Build live ISO
         env:
           BOLT_VERSION: ${{ inputs.version || '0.1.0-dev' }}
-        run: bash ./build.sh
+        run: |
+          echo "Disk space immediately before ISO build:"
+          df -h /
+          df -h "$GITHUB_WORKSPACE" || true
+          bash ./build.sh
 
       - name: Upload ISO and checksums as a workflow artifact
         uses: actions/upload-artifact@v4
