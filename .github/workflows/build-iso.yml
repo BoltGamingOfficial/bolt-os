@@ -49,6 +49,20 @@ jobs:
           bash -n airootfs/usr/local/libexec/bolt-set-wallpaper-once
           shellcheck build.sh airootfs/usr/local/libexec/bolt-create-live-user airootfs/usr/local/libexec/bolt-set-wallpaper-once
 
+      - name: Reclaim unused hosted tool cache space
+        run: |
+          # This is an ephemeral GitHub-hosted runner. The Arch container
+          # sees the runner's hosted tool cache at /__t; the build does not
+          # use those preinstalled language/tool runtimes.
+          if [[ -d /__t ]]; then
+            echo "Hosted tool cache before cleanup:"
+            du -sh /__t 2>/dev/null || true
+            find /__t -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+          fi
+          echo "Disk space after runner-cache cleanup:"
+          df -h /
+          df -h "$GITHUB_WORKSPACE" || true
+
       - name: Build live ISO
         env:
           BOLT_VERSION: ${{ inputs.version || '0.1.0-dev' }}
