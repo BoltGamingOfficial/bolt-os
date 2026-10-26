@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-The repository now has an initial Archiso-based **live-image build recipe**. This is not yet a validated release, and the project does not yet have a dedicated installer that lays down a complete BOLT OS installation on disk. Treat early images as experimental; do not replace your working operating system or store irreplaceable data on a test machine.
+The repository has an initial Archiso-based **live-image build recipe**. This is not yet a validated release, and the project does not yet have a dedicated installer that lays down a complete BOLT OS installation on disk. Treat early images as experimental; do not replace your working operating system or store irreplaceable data on a test machine.
 
 The build starts from the installed Archiso `releng` profile to preserve its supported boot infrastructure, then adds BOLT's package list and live-session overlay. See the current [Archiso documentation](https://wiki.archlinux.org/title/Archiso).
 
@@ -22,14 +22,14 @@ BOLT_VERSION=0.1.0-dev bash ./build.sh
 
 The script expects `/usr/share/archiso/configs/releng` and the current Arch package repositories. You can select another installed releng profile with `ARCHISO_PROFILE=/path/to/releng`. Build output goes to `out/`; intermediate files go to `work/`. Override either with `OUT_DIR` or `WORK_DIR`.
 
-Building an Arch ISO is supported on Arch Linux. Other environments can work but are not our initial supported build host. Run the build as root if the local Archiso version/environment requires it.
+Building an Arch ISO is supported on Arch Linux. Other environments can work but are not our initial supported build host. Run the build with the permissions required by your Archiso version.
 
 ## Test before distribution
 
 After a successful build, verify the file hash and boot it in a virtual machine before using a USB stick:
 
 ```sh
-sha256sum -c out/SHA256SUMS
+(cd out && sha256sum -c SHA256SUMS)
 run_archiso -i out/bolt-os-0.1.0-dev-x86_64.iso
 ```
 
