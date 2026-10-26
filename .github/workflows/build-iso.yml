@@ -1,10 +1,19 @@
 name: Build and publish BOLT OS ISO
 
 on:
+  # Build a new experimental prerelease whenever the OS build inputs change.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-iso.yml'
+      - 'build.sh'
+      - 'packages.x86_64'
+      - 'airootfs/**'
+      - 'branding/**'
   workflow_dispatch:
     inputs:
       version:
-        description: Release version label (use a new version for a fresh release)
+        description: Release version label (new tags create separate prereleases)
         required: true
         default: 0.1.0-dev
         type: string
@@ -34,13 +43,13 @@ jobs:
 
       - name: Build live ISO
         env:
-          BOLT_VERSION: ${{ inputs.version }}
+          BOLT_VERSION: ${{ inputs.version || '0.1.0-dev' }}
         run: bash ./build.sh
 
       - name: Upload ISO and checksums as a workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bolt-os-${{ inputs.version }}-x86_64
+          name: bolt-os-${{ inputs.version || '0.1.0-dev' }}-x86_64
           path: |
             out/*.iso
             out/SHA256SUMS
@@ -50,8 +59,8 @@ jobs:
       - name: Publish ISO in GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
-          name: BOLT OS ${{ inputs.version }}
+          tag_name: v${{ inputs.version || '0.1.0-dev' }}
+          name: BOLT OS ${{ inputs.version || '0.1.0-dev' }}
           target_commitish: main
           prerelease: true
           draft: false
