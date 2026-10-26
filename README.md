@@ -1,11 +1,11 @@
 # BOLT OS
 
-**A customizable, gaming-focused Linux operating system with an integrated AI hub.**
+**A customizable, gaming-first Linux operating system.**
 
-This repository is also the planning vault for BOLT OS. Open the repository folder in [Obsidian](https://obsidian.md/) to navigate the notes through their internal links.
+This repository is also the planning vault for [Obsidian](https://obsidian.md/). Open the repository folder as a vault to navigate the notes through their internal links.
 
-> [!warning] Early planning stage
-> BOLT OS is currently a concept and planning project. A bootable ISO has not yet been produced or validated. Hardware and game compatibility must be tested rather than assumed.
+> [!warning] Experimental prototype
+> BOLT OS is in early development. The repository contains an initial live-image build recipe, but no ISO has yet been built and validated. Do not use it as a replacement for a working system.
 
 ## Start here
 
@@ -13,18 +13,24 @@ This repository is also the planning vault for BOLT OS. Open the repository fold
 - [[Vision and Goals]]
 - [[System Architecture]]
 - [[Gaming Experience]]
-- [[AI Hub - OpenCode]]
 - [[Hardware Compatibility]]
 - [[Branding]]
 - [[Roadmap]]
 - [[Open Questions]]
 
+## Building
+
+- [Build instructions](BUILDING.md)
+- [[Memory Budget]] — lightweight desktop goals and measurement procedure
+- `build.sh` — builds an Archiso-based live image on an Arch Linux x86-64 host
+- [Manual ISO build workflow](https://github.com/BoltGamingOfficial/bolt-os/actions/workflows/build-iso.yml) — available under GitHub Actions
+
 ## Current direction
 
-- Base: Arch Linux
-- Desktop: KDE Plasma
-- Focus: gaming performance, customization, a lean default install, and broad hardware support
-- AI: an integrated entry point for OpenCode with configurable model providers
+- Base: Arch Linux, using the upstream Archiso live-image infrastructure
+- Desktop: KDE Plasma, using a deliberately focused package set
+- Gaming: Steam, Lutris, Vulkan, GameMode, Gamescope, and MangoHud
+- Runtime policy: game launchers do not autostart; OpenCode remains optional and user-launched
 - Brand: gold background with a simple black lightning bolt
 
-See [[System Architecture]] and [[Open Questions]] before treating any design choice as final.
+The first milestone is a bootable live prototype. A dedicated, tested installer for an installed BOLT OS system is still needed.
