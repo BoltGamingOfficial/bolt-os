@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+MARKER="$HOME/.config/.bolt-wallpaper-selected"
+[[ -e "$MARKER" ]] && exit 0
+mkdir -p "$HOME/.config"
+
+# This runs only inside the live KDE session, after the desktop starts.
+if /usr/bin/plasma-apply-wallpaperimage /usr/share/wallpapers/BOLT.svg; then
+  touch "$MARKER"
+fi
