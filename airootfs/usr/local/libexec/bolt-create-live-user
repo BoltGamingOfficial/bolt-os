@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if id bolt >/dev/null 2>&1; then
+  exit 0
+fi
+
+groups="wheel"
+for group in video audio storage optical; do
+  if getent group "$group" >/dev/null 2>&1; then
+    groups+=",${group}"
+  fi
+done
+
+# The live image is ephemeral; the regular account exists only for this session.
+useradd --create-home --uid 1000 --user-group --groups "$groups" --shell /bin/bash bolt
+install -d -o bolt -g bolt -m 0750 /home/bolt
