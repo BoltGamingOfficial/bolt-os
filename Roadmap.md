@@ -1,45 +1,50 @@
 # Roadmap
 
 ## Phase 0 — Define the project
-- [x] Collect the core ideas in an Obsidian-friendly vault
-- [x] Record the initial architecture and goals
-- [ ] Resolve key decisions in [[Open Questions]]
-- [ ] Define first-release scope and minimum hardware target
+- [x] Collect core ideas in an Obsidian-friendly vault
+- [x] Record initial architecture, goals, and product principles
+- [x] Define the idle-memory measurement target in [[Memory Budget]]
+- [x] Add the first Archiso live-image build recipe
+- [ ] Resolve remaining decisions in [[Open Questions]]
 
 ## Phase 1 — Build a bootable prototype
-- [ ] Select and document the ISO build tooling
-- [ ] Create reproducible build configuration
-- [ ] Add base system and KDE Plasma
-- [ ] Build first ISO
-- [ ] Boot the ISO in a virtual machine
-- [ ] Document install and recovery workflow
+- [x] Add focused KDE and gaming package list
+- [x] Configure live desktop user and display manager
+- [x] Add the gold/black BOLT wallpaper
+- [x] Add a manually triggered ISO build workflow
+- [ ] Run the first ISO build
+- [ ] Boot ISO in a virtual machine
+- [ ] Fix any build, boot, network, audio, or session issues
+- [ ] Record initial idle-memory and boot-time measurements
 
-## Phase 2 — Gaming foundations
-- [ ] Add and validate graphics/Vulkan paths
-- [ ] Add Steam and Proton workflow
-- [ ] Evaluate Lutris and Heroic inclusion
-- [ ] Test controller and audio support
-- [ ] Record performance baseline
+## Phase 2 — Validate gaming foundations
+- [x] Include Steam and gaming utilities in the prototype package set
+- [x] Include 64-bit and 32-bit Intel, AMD and Nouveau Vulkan drivers
+- [ ] Verify the GPU and Vulkan detection paths
+- [ ] Test Steam launch and game compatibility
+- [ ] Evaluate NVIDIA's proprietary-driver setup and document the supported path
+- [ ] Test controller, audio, and suspend/resume behavior
+- [ ] Record repeatable performance baselines
 
-## Phase 3 — BOLT experience
-- [ ] Add branding and default wallpaper
-- [ ] Create first-run setup flow
-- [ ] Add optional feature controls
-- [ ] Improve diagnostics and support bundle
+## Phase 3 — Make it installable
+- [ ] Select an installer approach that installs the BOLT package/configuration set
+- [ ] Ensure live-only credentials and sudo rules do not carry into installed systems
+- [ ] Add first-run user creation and hardware checks for installed systems
+- [ ] Test install, reboot, update, and recovery paths
 
-## Phase 4 — AI hub
-- [ ] Validate OpenCode install and provider setup
-- [ ] Add launcher and setup documentation
-- [ ] Document credential safety and data handling
-- [ ] Verify AI components are optional
+## Phase 4 — Finish the BOLT experience
+- [ ] Set and test default desktop theme, panel, and wallpaper
+- [ ] Review all enabled services and optional features
+- [ ] Add safe support diagnostics
+- [ ] Keep OpenCode documented as optional developer tooling
 
 ## Phase 5 — Release readiness
 - [ ] Test on real Intel, AMD and NVIDIA systems
-- [ ] Test updates and recovery
+- [ ] Test system updates and recovery
 - [ ] Publish known issues and compatibility notes
 - [ ] Automate repeatable checks
 - [ ] Build, checksum and test a release candidate
 
 ## Rule for closing tasks
 
-A task is complete only when its output exists and the relevant validation has been performed. Planning a feature is not the same as implementing it.
+A task is complete only when its output exists and relevant validation has been performed. Planning a feature is not implementation; a build recipe is not a built ISO; a bootable live desktop is not yet an installed OS.
