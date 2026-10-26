@@ -82,6 +82,41 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Prepare release assets under GitHub's per-file size limit
+        run: |
+          set -euo pipefail
+          mkdir -p out/release-assets
+          iso="$(find out -maxdepth 1 -type f -name '*.iso' -print -quit)"
+          if [[ -z "$iso" ]]; then
+            echo "No ISO found in out/" >&2
+            exit 1
+          fi
+
+          # GitHub Releases rejects individual assets >= 2 GiB. Keep the
+          # original ISO intact in the workflow artifact, but split the
+          # release-download copy into safely smaller chunks.
+          iso_name="$(basename "$iso")"
+          split -b 1900M -d -a 2 "$iso" "out/release-assets/${iso_name}.part-"
+          cp out/SHA256SUMS out/release-assets/SHA256SUMS
+          cat > out/release-assets/README-DOWNLOAD.txt <<EOF
+          BOLT OS ISO download
+          ====================
+
+          Download every ${iso_name}.part-* file into the same directory.
+          Reassemble the ISO by running:
+
+            cat ${iso_name}.part-* > ${iso_name}
+
+          Then verify the reconstructed ISO with:
+
+            sha256sum -c SHA256SUMS
+
+          The full, unsplit ISO is also available in the GitHub Actions
+          workflow artifact for this run (retained for 7 days).
+          EOF
+          echo "Release assets and sizes:"
+          ls -lh out/release-assets/
+
       - name: Publish ISO in GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
@@ -92,7 +127,6 @@ jobs:
           draft: false
           generate_release_notes: true
           files: |
-            out/*.iso
-            out/SHA256SUMS
+            out/release-assets/*
           fail_on_unmatched_files: true
           overwrite_files: true
