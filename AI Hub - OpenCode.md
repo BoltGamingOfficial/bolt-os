@@ -1,39 +1,35 @@
-# AI Hub - OpenCode
+# Optional Developer Tool — OpenCode
 
-## Purpose
+## Positioning
 
-Provide an optional, discoverable place to launch and configure OpenCode for AI-assisted coding and agent workflows.
+OpenCode is an optional developer tool for people who want AI-assisted coding and agent workflows. It is not the identity of BOLT OS and should not be pushed into the shell, settings, file manager, or ordinary system applications.
 
-**Important distinction:** OpenCode is an agent/tooling application, not a model by itself. It needs a supported model provider or local inference service configured by the user.
+## Principles
 
-## Desired capabilities
+- No assistant is required to boot, update, configure, or play games.
+- OpenCode is user-launched and easy to ignore or remove.
+- The user chooses any supported model provider and decides what code or prompts to share.
+- BOLT OS must not send prompts or project files to a provider without explicit user action.
+- Clearly distinguish local processing from remote provider processing.
+- Do not store credentials in this repository or expose them in logs and diagnostics.
 
-- A desktop launcher and setup guide.
-- Provider/model configuration based on OpenCode's supported options.
-- Clear indication of whether a provider is local or remote.
-- Guidance for setting up API credentials securely.
-- Optional local-model workflows where hardware and supported runtimes permit.
-- Easy disable/uninstall path; the OS must remain usable without AI.
-- Diagnostics that do not print secret values.
+## Setup goals
 
-## Credential safety
-
-- Never commit API keys, access tokens, or personal configuration.
-- Prefer documented secret storage or environment/config mechanisms supported by the provider.
-- Ensure logs and support bundles redact credentials.
-- Explain that remote providers may process prompts and code off-device according to their own terms.
-- Make provider choice and data handling visible to the user.
+- Document a currently supported installation method.
+- Explain that OpenCode is tooling and needs a supported model provider or a local inference service.
+- Provide secure credential guidance.
+- Test that removing OpenCode does not affect the desktop or gaming stack.
+- Keep provider setup out of the mandatory first-boot flow.
 
 ## First prototype
 
-1. Verify the supported OpenCode installation method and current configuration format.
-2. Package or document installation without bundling secrets.
-3. Add a launcher and first-run checklist.
-4. Test with one remote provider and one local workflow if feasible.
-5. Confirm the AI hub can be removed without affecting the desktop or gaming stack.
+1. Verify OpenCode's official installation and configuration instructions.
+2. Document setup as an optional step.
+3. Test a supported provider workflow and, if practical, a local workflow.
+4. Keep configuration and provider choice under the user's control.
 
-## Questions
+## Open questions
 
-- Should the AI hub be a simple launcher/settings page first, or a custom graphical application?
-- Which providers should be documented in the first release?
-- Should local inference be a supported target for the first prototype, or a later optional feature?
+- Should OpenCode be mentioned in the installer, app discovery, or documentation only?
+- Which providers should the documentation cover first?
+- Should local inference remain community documentation until tested?
