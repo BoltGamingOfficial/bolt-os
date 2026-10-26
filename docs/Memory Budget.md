@@ -19,6 +19,10 @@ The first target is a **lean idle desktop**, not a benchmark claim. Until the IS
 
 Aim for no more than **1.5 GiB of process memory attributable to the idle desktop and enabled services** on a defined 8 GiB x86-64 reference system after login, with no apps open and after a three-minute settling period. This is a goal to test, not a measured achievement or guarantee. The exact metric and test fixture must be recorded before judging pass/fail.
 
+## How to interpret the numbers
+
+Linux deliberately uses otherwise-free RAM for filesystem cache and reclaims it when applications need memory. A single “used RAM” number can therefore be misleading. Track `MemAvailable`, swap pressure, and process PSS alongside RSS; do not call reclaimable cache a leak.
+
 ## Test procedure
 
 Run after a clean boot and again after updates:
