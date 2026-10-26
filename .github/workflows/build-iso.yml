@@ -1,0 +1,48 @@
+name: Build BOLT OS ISO
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: ISO version label
+        required: true
+        default: 0.1.0-dev
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    steps:
+      - name: Install build tools in the Arch container
+        run: pacman -Syu --noconfirm --needed archiso git shellcheck
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate shell scripts
+        run: |
+          bash -n build.sh
+          bash -n airootfs/usr/local/libexec/bolt-create-live-user
+          bash -n airootfs/usr/local/libexec/bolt-set-wallpaper-once
+          shellcheck build.sh airootfs/usr/local/libexec/bolt-create-live-user airootfs/usr/local/libexec/bolt-set-wallpaper-once
+
+      - name: Build live ISO
+        env:
+          BOLT_VERSION: ${{ inputs.version }}
+        run: bash ./build.sh
+
+      - name: Upload ISO and checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: bolt-os-${{ inputs.version }}-x86_64
+          path: |
+            out/*.iso
+            out/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
