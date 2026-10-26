@@ -1,0 +1,13 @@
+[Unit]
+Description=Provision the temporary BOLT OS live desktop user
+Before=display-manager.service
+After=local-fs.target
+ConditionPathExists=/usr/local/libexec/bolt-create-live-user
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /usr/local/libexec/bolt-create-live-user
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
