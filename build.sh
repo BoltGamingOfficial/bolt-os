@@ -94,6 +94,9 @@ ln -sfn /usr/lib/systemd/system/bluetooth.service \
   "$SYSTEMD_TREE/multi-user.target.wants/bluetooth.service"
 ln -sfn /etc/systemd/system/bolt-live-user.service \
   "$SYSTEMD_TREE/multi-user.target.wants/bolt-live-user.service"
+mkdir -p "$SYSTEMD_TREE/graphical.target.wants"
+ln -sfn /usr/lib/systemd/system/sddm.service \
+  "$SYSTEMD_TREE/graphical.target.wants/sddm.service"
 ln -sfn /usr/lib/systemd/system/sddm.service \
   "$SYSTEMD_TREE/display-manager.service"
 
