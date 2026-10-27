@@ -41,10 +41,10 @@ jobs:
 
       - name: Validate shell scripts and profile
         run: |
-          bash -n build.sh tests/check-profile.sh
+          bash -n build.sh tests/check-profile.sh tests/vm-smoke-test.sh
           bash -n airootfs/usr/local/libexec/bolt-create-live-user
           bash -n airootfs/usr/local/libexec/bolt-set-wallpaper-once
-          shellcheck build.sh tests/check-profile.sh airootfs/usr/local/libexec/bolt-create-live-user airootfs/usr/local/libexec/bolt-set-wallpaper-once
+          shellcheck build.sh tests/check-profile.sh tests/vm-smoke-test.sh airootfs/usr/local/libexec/bolt-create-live-user airootfs/usr/local/libexec/bolt-set-wallpaper-once
           bash tests/check-profile.sh
 
       - name: Reclaim unused hosted tool cache space
