@@ -30,6 +30,20 @@ The script expects `/usr/share/archiso/configs/releng` and the current Arch pack
 
 Building an Arch ISO is supported on Arch Linux. Other environments can work but are not our initial supported build host. Run the build with the permissions required by your Archiso version.
 
+## VirtualBox guest integration
+
+The ISO package list includes Arch's `virtualbox-guest-utils` package, and the build enables `vboxservice.service`. The package supplies guest-side integration helpers, including `VBoxClient` autostart for desktop sessions. This is intended to improve pointer integration, dynamic display sizing, clipboard sharing, and drag-and-drop in VirtualBox guests.
+
+**The host VM must also allow these features.** On the Windows host, fully shut down the VM and open VirtualBox Manager → select the BOLT VM → **Settings → General → Advanced**. Set **Shared Clipboard** to **Bidirectional** and **Drag'n'Drop** to **Bidirectional**. If the options are disabled or integration still does not work, check the VirtualBox host version and guest session type. Guest Additions and the host VirtualBox version should be compatible; clipboard and drag-and-drop support can vary by display session, so try a Plasma X11 session if the Wayland session does not provide the required integration.
+
+This support is specifically for VirtualBox. Other hypervisors do not gain their guest tools from this package. Host-side options are not changed automatically by the ISO.
+
+## Persistence: important limitation
+
+The live ISO is ephemeral. Files and user settings created only inside the live session—including Prism Launcher instances, account tokens, browser profiles, and desktop settings—can disappear when the VM reboots. This is expected behavior for the current prototype, not a safe persistent installation.
+
+Do not store important accounts or files only in a live ISO session. An installed BOLT OS needs a dedicated installer and a tested on-disk installation path; those are not implemented yet. Persistence is a release blocker and must be tested across reboot and full shutdown before we describe an installed release as usable.
+
 ## Test before distribution
 
 After a successful build, verify the file hash and boot it in a virtual machine before using a USB stick:
@@ -42,7 +56,9 @@ run_archiso -i out/bolt-os-0.1.0-dev-x86_64.iso
 The exact ISO filename is determined by the installed Archiso version and build profile; use `ls -lh out/` if it differs from the example. On the VM, verify:
 - UEFI/BIOS boot path available in the image
 - SDDM opens the KDE Plasma live desktop
+- the default gold-and-black BOLT wallpaper is applied
 - Wi-Fi/Ethernet, audio, Vulkan detection, and session shutdown work
+- shared clipboard and drag-and-drop work after enabling them in VirtualBox host settings
 - Steam starts only when manually launched
 - no AI application starts at login
 - the live-only user and passwordless sudo rule do not leak into a future disk installer
@@ -51,6 +67,7 @@ The exact ISO filename is determined by the installed Archiso version and build 
 ## Important notes
 
 - The default package list includes Steam and gaming utilities, but they do not need to run in the background.
+- VirtualBox guest integration is included for convenience but is not a substitute for testing on physical hardware or other hypervisors.
 - The live ISO is ephemeral; files and user settings do not survive a reboot unless explicitly saved elsewhere.
 - An installable release needs a separate, tested installer and post-install setup path. Do not mistake the live desktop for that installer.
 - Arch Linux is rolling release, so rebuild and test periodically against current packages.
