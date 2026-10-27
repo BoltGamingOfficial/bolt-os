@@ -4,6 +4,7 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ARCH="$(uname -m)"
 BOLT_VERSION="${BOLT_VERSION:-0.1.0-dev}"
+BOLT_ENABLE_BLUETOOTH="${BOLT_ENABLE_BLUETOOTH:-0}"
 ARCHISO_PROFILE="${ARCHISO_PROFILE:-/usr/share/archiso/configs/releng}"
 OUT_DIR="${OUT_DIR:-$ROOT_DIR/out}"
 WORK_DIR="${WORK_DIR:-$ROOT_DIR/work}"
@@ -94,8 +95,13 @@ ln -s /run/NetworkManager/resolv.conf "$PROFILE_DIR/airootfs/etc/resolv.conf"
 # Enable only the services needed to start the live desktop smoothly.
 ln -sfn /usr/lib/systemd/system/NetworkManager.service \
   "$SYSTEMD_TREE/multi-user.target.wants/NetworkManager.service"
-ln -sfn /usr/lib/systemd/system/bluetooth.service \
-  "$SYSTEMD_TREE/multi-user.target.wants/bluetooth.service"
+if [[ "$BOLT_ENABLE_BLUETOOTH" == "1" ]]; then
+  ln -sfn /usr/lib/systemd/system/bluetooth.service \
+    "$SYSTEMD_TREE/multi-user.target.wants/bluetooth.service"
+elif [[ "$BOLT_ENABLE_BLUETOOTH" != "0" ]]; then
+  printf 'Invalid BOLT_ENABLE_BLUETOOTH: use 0 (default) or 1.\\n' >&2
+  exit 2
+fi
 ln -sfn /etc/systemd/system/bolt-live-user.service \
   "$SYSTEMD_TREE/multi-user.target.wants/bolt-live-user.service"
 mkdir -p "$SYSTEMD_TREE/graphical.target.wants"
