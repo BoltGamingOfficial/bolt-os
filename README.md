@@ -2,10 +2,10 @@
 
 **A customizable, gaming-first Linux operating system.**
 
-This repository is also the planning vault for [Obsidian](https://obsidian.md/). Open the repository folder as a vault to navigate the notes through their internal links.
+This repository is also the planning vault for [Obsidian](https://obsidian.md/). Open the repository folder as a vault to navigate the project notes.
 
-> [!warning] Experimental prototype
-> BOLT OS is in early development. The repository contains an initial live-image build recipe, but no ISO has yet been built and validated. Do not use it as a replacement for a working system.
+> [!warning] Experimental development build
+> BOLT OS is an early Archiso-based live prototype. CI has successfully produced development ISO artifacts, but the current development image has **not yet passed the complete boot, hardware, installer, persistence, or gaming release gates**. Do not replace a working operating system or use the image with irreplaceable data.
 
 ## Start here
 
@@ -18,19 +18,37 @@ This repository is also the planning vault for [Obsidian](https://obsidian.md/).
 - [[Roadmap]]
 - [[Open Questions]]
 
-## Building
+## Build and test
 
 - [Build instructions](BUILDING.md)
-- [[Memory Budget]] — lightweight desktop goals and measurement procedure
-- `build.sh` — builds an Archiso-based live image on an Arch Linux x86-64 host
-- [Manual ISO build workflow](https://github.com/BoltGamingOfficial/bolt-os/actions/workflows/build-iso.yml) — available under GitHub Actions
+- [[Memory Budget]] — performance goals and measurement procedure
+- [[Performance & RAM Integration Handoff]] — current evidence and outstanding work
+- `build.sh` — shared Archiso build entry point
+- [Development ISO workflow](https://github.com/BoltGamingOfficial/bolt-os/actions/workflows/build-iso-test.yml)
+- [Repository quality checks](https://github.com/BoltGamingOfficial/bolt-os/actions/workflows/quality.yml)
 
-## Current direction
+## Current implementation
 
-- Base: Arch Linux, using the upstream Archiso live-image infrastructure
-- Desktop: KDE Plasma, using a deliberately focused package set
-- Gaming: Steam, Lutris, Vulkan, GameMode, Gamescope, and MangoHud
-- Runtime policy: game launchers do not autostart; OpenCode remains optional and user-launched
-- Brand: gold background with a simple black lightning bolt
+- **Base:** Arch Linux and upstream Archiso live-image infrastructure.
+- **Desktop:** KDE Plasma with SDDM.
+- **Gaming:** Steam, Lutris, Vulkan and 32-bit Vulkan libraries, GameMode, Gamescope, MangoHud.
+- **Everyday app:** Firefox.
+- **Networking/audio:** NetworkManager and PipeWire/WirePlumber.
+- **Runtime policy:** game launchers do not autostart; Bluetooth packages are present but the daemon is opt-in at build time; OpenCode remains optional and user-launched.
+- **Brand:** gold wallpaper with a black lightning bolt.
 
-The first milestone is a bootable live prototype. A dedicated, tested installer for an installed BOLT OS system is still needed.
+## Release status
+
+| Gate | Status |
+|---|---|
+| CI ISO build and checksum generation | Implemented; CI build succeeded for a development branch commit |
+| Reproducible build from documented instructions | Not yet independently reproduced |
+| UEFI boot and KDE live session | Must be tested on the exact artifact |
+| Networking, audio, input, scaling, shutdown | Not fully verified |
+| Installed-system installer | Not implemented |
+| KDE/BOLT settings persistent across reboot and shutdown | Not verified; live sessions are ephemeral |
+| Balanced/Gaming/Performance/Battery presets | Not implemented and tested end-to-end |
+| RAM, boot, idle CPU, gaming frame-time measurements | Not recorded; performance targets are not claims |
+| Physical hardware compatibility | Not yet established across Intel, AMD, and NVIDIA |
+
+A successful workflow means the ISO was built and the artifact uploaded; it does not prove the ISO boots or works on physical hardware. Keep all development artifacts labeled experimental until the relevant gates are tested and recorded.
