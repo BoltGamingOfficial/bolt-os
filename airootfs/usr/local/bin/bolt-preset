@@ -38,7 +38,7 @@ apply_power_profile() {
     battery) profile=power-saver ;;
     *) printf 'Invalid preset: %s\n' "$preset" >&2; return 2 ;;
   esac
-  if ! powerprofilesctl list 2>/dev/null | grep -Eq "(^|[[:space:]])$profile([[:space:]]|$)"; then
+  if ! powerprofilesctl list 2>/dev/null | grep -Eq "(^|[[:space:]])$profile([[:space:]:]|$)"; then
     printf 'Preset saved, but power profile "%s" is not supported on this hardware.\n' "$profile" >&2
     return 0
   fi
