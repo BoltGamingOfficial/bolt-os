@@ -106,6 +106,9 @@ ln -s /run/NetworkManager/resolv.conf "$PROFILE_DIR/airootfs/etc/resolv.conf"
 # Enable only the services needed to start the live desktop smoothly.
 ln -sfn /usr/lib/systemd/system/NetworkManager.service \
   "$SYSTEMD_TREE/multi-user.target.wants/NetworkManager.service"
+# Provide the supported system power-profile API for BOLT preset selection.
+ln -sfn /usr/lib/systemd/system/power-profiles-daemon.service \\
+  "$SYSTEMD_TREE/multi-user.target.wants/power-profiles-daemon.service"
 if [[ "$BOLT_ENABLE_BLUETOOTH" == "1" ]]; then
   ln -sfn /usr/lib/systemd/system/bluetooth.service \
     "$SYSTEMD_TREE/multi-user.target.wants/bluetooth.service"
