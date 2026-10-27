@@ -99,7 +99,7 @@ if [[ "$BOLT_ENABLE_BLUETOOTH" == "1" ]]; then
   ln -sfn /usr/lib/systemd/system/bluetooth.service \
     "$SYSTEMD_TREE/multi-user.target.wants/bluetooth.service"
 elif [[ "$BOLT_ENABLE_BLUETOOTH" != "0" ]]; then
-  printf 'Invalid BOLT_ENABLE_BLUETOOTH: use 0 (default) or 1.\\n' >&2
+  printf 'Invalid BOLT_ENABLE_BLUETOOTH: use 0 (default) or 1.\n' >&2
   exit 2
 fi
 ln -sfn /etc/systemd/system/bolt-live-user.service \
