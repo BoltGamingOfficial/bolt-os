@@ -14,6 +14,7 @@ less
 nano
 bash-completion
 networkmanager
+power-profiles-daemon
 bluez
 bluez-utils
 pipewire

@@ -75,6 +75,11 @@ if [[ -d "$ROOT_DIR/airootfs" ]]; then
   cp -a "$ROOT_DIR/airootfs/." "$PROFILE_DIR/airootfs/"
 fi
 
+# Ensure repository-created scripts have executable mode in the ISO overlay.
+if [[ -f "$PROFILE_DIR/airootfs/usr/local/bin/bolt-preset" ]]; then
+  chmod 0755 "$PROFILE_DIR/airootfs/usr/local/bin/bolt-preset"
+fi
+
 # Ship the repeatable VM smoke-test script with the live image for easy diagnostics.
 if [[ -f "$ROOT_DIR/tests/vm-smoke-test.sh" ]]; then
   install -D -m 0755 "$ROOT_DIR/tests/vm-smoke-test.sh" \
@@ -101,6 +106,9 @@ ln -s /run/NetworkManager/resolv.conf "$PROFILE_DIR/airootfs/etc/resolv.conf"
 # Enable only the services needed to start the live desktop smoothly.
 ln -sfn /usr/lib/systemd/system/NetworkManager.service \
   "$SYSTEMD_TREE/multi-user.target.wants/NetworkManager.service"
+# Provide the supported system power-profile API for BOLT preset selection.
+ln -sfn /usr/lib/systemd/system/power-profiles-daemon.service \
+  "$SYSTEMD_TREE/multi-user.target.wants/power-profiles-daemon.service"
 if [[ "$BOLT_ENABLE_BLUETOOTH" == "1" ]]; then
   ln -sfn /usr/lib/systemd/system/bluetooth.service \
     "$SYSTEMD_TREE/multi-user.target.wants/bluetooth.service"
