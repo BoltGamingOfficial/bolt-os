@@ -25,6 +25,9 @@ xdg-utils
 udisks2
 polkit
 
+# Everyday desktop applications
+firefox
+
 # KDE Plasma desktop (kept intentionally focused)
 plasma-desktop
 plasma-nm
@@ -57,6 +60,7 @@ lib32-vulkan-nouveau
 # Gaming
 steam
 lutris
+prismlauncher
 gamemode
 gamescope
 mangohud
