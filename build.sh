@@ -75,6 +75,11 @@ if [[ -d "$ROOT_DIR/airootfs" ]]; then
   cp -a "$ROOT_DIR/airootfs/." "$PROFILE_DIR/airootfs/"
 fi
 
+# Ensure repository-created scripts have executable mode in the ISO overlay.
+if [[ -f "$PROFILE_DIR/airootfs/usr/local/bin/bolt-preset" ]]; then
+  chmod 0755 "$PROFILE_DIR/airootfs/usr/local/bin/bolt-preset"
+fi
+
 # Ship the repeatable VM smoke-test script with the live image for easy diagnostics.
 if [[ -f "$ROOT_DIR/tests/vm-smoke-test.sh" ]]; then
   install -D -m 0755 "$ROOT_DIR/tests/vm-smoke-test.sh" \
