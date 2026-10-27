@@ -75,6 +75,12 @@ if [[ -d "$ROOT_DIR/airootfs" ]]; then
   cp -a "$ROOT_DIR/airootfs/." "$PROFILE_DIR/airootfs/"
 fi
 
+# Ship the repeatable VM smoke-test script with the live image for easy diagnostics.
+if [[ -f "$ROOT_DIR/tests/vm-smoke-test.sh" ]]; then
+  install -D -m 0755 "$ROOT_DIR/tests/vm-smoke-test.sh" \
+    "$PROFILE_DIR/airootfs/usr/local/share/bolt-os/tests/vm-smoke-test.sh"
+fi
+
 # Include the simple, high-contrast BOLT wallpaper in the live image.
 if [[ -f "$ROOT_DIR/branding/bolt-wallpaper.svg" ]]; then
   mkdir -p "$PROFILE_DIR/airootfs/usr/share/wallpapers"
