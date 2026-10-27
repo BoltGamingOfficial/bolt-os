@@ -11,7 +11,7 @@ The first target is a **lean idle desktop**, not a benchmark claim. Until the IS
 - No AI/chat assistant starts with the desktop. OpenCode remains optional and user-launched.
 - No Steam, Lutris, or other game launcher autostarts by default.
 - Disable KDE Baloo file indexing by default in the live prototype; offer the choice to enable it later.
-- Enable only services needed for networking, the graphical login, and requested Bluetooth support.
+- Enable only services needed for networking and the graphical login by default. Bluetooth packages remain installed, but the Bluetooth daemon is not enabled at boot unless explicitly requested when building the ISO (`BOLT_ENABLE_BLUETOOTH=1`). This avoids starting an unused service while retaining a documented opt-in.
 - Do not trade away essential security, audio, networking, power management, or accessibility just to reduce a screenshot's memory number.
 - Do not confuse disk usage from installed applications with RAM consumed by running processes.
 
