@@ -19,10 +19,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes shellcheck
       - name: Check shell syntax
-        run: bash -n build.sh tests/check-profile.sh tests/vm-smoke-test.sh tests/test-bolt-preset.sh airootfs/usr/local/bin/bolt-preset
+        run: bash -n build.sh tests/check-profile.sh tests/vm-smoke-test.sh tests/test-bolt-preset.sh tests/check-browser.sh airootfs/usr/local/bin/bolt-preset
       - name: Run ShellCheck
-        run: shellcheck build.sh tests/check-profile.sh tests/vm-smoke-test.sh tests/test-bolt-preset.sh airootfs/usr/local/bin/bolt-preset
+        run: shellcheck build.sh tests/check-profile.sh tests/vm-smoke-test.sh tests/test-bolt-preset.sh tests/check-browser.sh airootfs/usr/local/bin/bolt-preset
       - name: Validate package manifest and build policy
         run: |
           bash tests/check-profile.sh
           bash tests/test-bolt-preset.sh
+          bash tests/check-browser.sh
