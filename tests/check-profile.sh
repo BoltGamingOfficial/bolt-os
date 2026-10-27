@@ -22,7 +22,8 @@ for package in base linux linux-firmware networkmanager plasma-desktop sddm mesa
   grep -Fxq "$package" "$PKG_FILE" || fail "required package missing: $package"
 done
 
-grep -Fq 'BOLT_ENABLE_BLUETOOTH="${BOLT_ENABLE_BLUETOOTH:-0}"' "$BUILD_FILE" || # shellcheck disable=SC2016
+# shellcheck disable=SC2016
+grep -Fq 'BOLT_ENABLE_BLUETOOTH="${BOLT_ENABLE_BLUETOOTH:-0}"' "$BUILD_FILE" ||
   fail "Bluetooth must default to opt-in"
 grep -Fq 'BOLT_ENABLE_BLUETOOTH=1' "$ROOT_DIR/BUILDING.md" ||
   fail "BUILDING.md must document the Bluetooth opt-in"
