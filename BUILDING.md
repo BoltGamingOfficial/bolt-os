@@ -20,6 +20,12 @@ Clone the repository, then run:
 BOLT_VERSION=0.1.0-dev bash ./build.sh
 ```
 
+Bluetooth support is installed but the daemon is not enabled at boot by default. To build an image that starts Bluetooth automatically, use `BOLT_ENABLE_BLUETOOTH=1`:
+
+```sh
+BOLT_VERSION=0.1.0-dev BOLT_ENABLE_BLUETOOTH=1 bash ./build.sh
+```
+
 The script expects `/usr/share/archiso/configs/releng` and the current Arch package repositories. You can select another installed releng profile with `ARCHISO_PROFILE=/path/to/releng`. Build output goes to `out/`; intermediate files go to `work/`. Override either with `OUT_DIR` or `WORK_DIR`.
 
 Building an Arch ISO is supported on Arch Linux. Other environments can work but are not our initial supported build host. Run the build with the permissions required by your Archiso version.
