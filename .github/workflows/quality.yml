@@ -19,8 +19,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes shellcheck
       - name: Check shell syntax
-        run: bash -n build.sh tests/check-profile.sh
+        run: bash -n build.sh tests/check-profile.sh tests/vm-smoke-test.sh
       - name: Run ShellCheck
-        run: shellcheck build.sh tests/check-profile.sh
+        run: shellcheck build.sh tests/check-profile.sh tests/vm-smoke-test.sh
       - name: Validate package manifest and build policy
         run: bash tests/check-profile.sh
