@@ -3,6 +3,7 @@ name: Build BOLT OS test ISO (artifact only)
 on:
   push:
     branches:
+      - main
       - work/iso-reliability-baseline
     paths:
       - '.github/workflows/build-iso-test.yml'
