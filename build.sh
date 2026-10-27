@@ -79,6 +79,9 @@ fi
 if [[ -f "$PROFILE_DIR/airootfs/usr/local/bin/bolt-preset" ]]; then
   chmod 0755 "$PROFILE_DIR/airootfs/usr/local/bin/bolt-preset"
 fi
+if [[ -f "$PROFILE_DIR/airootfs/usr/local/libexec/bolt-set-wallpaper-once" ]]; then
+  chmod 0755 "$PROFILE_DIR/airootfs/usr/local/libexec/bolt-set-wallpaper-once"
+fi
 
 # Ship the repeatable VM smoke-test script with the live image for easy diagnostics.
 if [[ -f "$ROOT_DIR/tests/vm-smoke-test.sh" ]]; then
