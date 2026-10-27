@@ -1,0 +1,70 @@
+name: Build BOLT OS test ISO (artifact only)
+
+on:
+  push:
+    branches:
+      - work/iso-reliability-baseline
+    paths:
+      - '.github/workflows/build-iso-test.yml'
+      - 'build.sh'
+      - 'packages.x86_64'
+      - 'airootfs/**'
+      - 'branding/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: ISO version label
+        required: true
+        default: 0.1.0-dev-test
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    steps:
+      - name: Install Archiso build tools
+        run: |
+          pacman -Syu --noconfirm --needed archiso git shellcheck
+          pacman -Scc --noconfirm
+          df -h /
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate shell scripts
+        run: |
+          bash -n build.sh
+          bash -n airootfs/usr/local/libexec/bolt-create-live-user
+          bash -n airootfs/usr/local/libexec/bolt-set-wallpaper-once
+          shellcheck build.sh airootfs/usr/local/libexec/bolt-create-live-user airootfs/usr/local/libexec/bolt-set-wallpaper-once
+
+      - name: Reclaim unused hosted tool cache space
+        run: |
+          if [[ -d /__t ]]; then
+            find /__t -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+          fi
+          df -h /
+
+      - name: Build live ISO
+        env:
+          BOLT_VERSION: ${{ inputs.version || '0.1.0-dev-test' }}
+        run: |
+          bash ./build.sh
+          test -s out/SHA256SUMS
+          find out -maxdepth 1 -type f -name '*.iso' -size +0c -print -quit | grep -q .
+
+      - name: Upload ISO and checksum as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bolt-os-test-${{ inputs.version || '0.1.0-dev-test' }}-x86_64
+          path: |
+            out/*.iso
+            out/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
