@@ -18,7 +18,7 @@ bash -n "$BUILD_FILE" || fail "build.sh has a Bash syntax error"
 duplicates="$(grep -hEv '^[[:space:]]*(#|$)' "$PKG_FILE" | LC_ALL=C sort | uniq -d)"
 [[ -z "$duplicates" ]] || fail "duplicate package entries: $duplicates"
 
-for package in base linux linux-firmware networkmanager plasma-desktop sddm mesa vulkan-icd-loader steam gamemode; do
+for package in base linux linux-firmware networkmanager firefox plasma-desktop sddm mesa vulkan-icd-loader steam gamemode; do
   grep -Fxq "$package" "$PKG_FILE" || fail "required package missing: $package"
 done
 
