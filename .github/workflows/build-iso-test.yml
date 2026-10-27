@@ -10,6 +10,9 @@ on:
       - 'packages.x86_64'
       - 'tests/**'
       - 'BUILDING.md'
+      - 'README.md'
+      - 'Branding.md'
+      - 'docs/**'
       - 'airootfs/**'
       - 'branding/**'
   workflow_dispatch:
