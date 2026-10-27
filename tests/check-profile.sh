@@ -12,6 +12,8 @@ fail() {
 
 [[ -s "$PKG_FILE" ]] || fail "packages.x86_64 is missing or empty"
 [[ -s "$BUILD_FILE" ]] || fail "build.sh is missing or empty"
+[[ -s "$ROOT_DIR/tests/vm-smoke-test.sh" ]] || fail "VM smoke test script is missing or empty"
+grep -Fq '/usr/local/share/bolt-os/tests/vm-smoke-test.sh' "$BUILD_FILE" || fail "build.sh must install the VM smoke test into the live image"
 bash -n "$BUILD_FILE" || fail "build.sh has a Bash syntax error"
 
 # Ignore comments and blank lines, then detect duplicate package entries.
