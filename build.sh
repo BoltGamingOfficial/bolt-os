@@ -44,6 +44,26 @@ sed -i -E 's/^iso_application=.*/iso_application="BOLT OS Live Prototype"/' "$PR
 sed -i -E "s/^iso_version=.*/iso_version=\"$BOLT_VERSION\"/" "$PROFILE_DIR/profiledef.sh"
 sed -i -E 's/^install_dir=.*/install_dir="bolt"/' "$PROFILE_DIR/profiledef.sh"
 
+# Archiso defaults the writable live overlay (cowspace) to only 256 MiB.
+# That is too small for a gaming live image: launchers such as Prism download
+# hundreds of MiB of assets into the overlay. Set a 1 GiB ceiling on each
+# supported boot path. tmpfs grows on demand; this is a limit, not a reservation.
+# Keep the value moderate for the live image's RAM budget.
+COW_SPACESIZE="1G"
+BOOT_CONFIGS=(
+  "$PROFILE_DIR"/efiboot/loader/entries/*.conf
+  "$PROFILE_DIR"/grub/*.cfg
+  "$PROFILE_DIR"/syslinux/*.cfg
+)
+for boot_config in "${BOOT_CONFIGS[@]}"; do
+  [[ -f "$boot_config" ]] || continue
+  sed -i -E '
+    /^[[:space:]]*(options|linux|linuxefi|APPEND)[[:space:]]/ {
+      /(^|[[:space:]])cow_spacesize=/! s/[[:space:]]*$/ cow_spacesize='"$COW_SPACESIZE"'/ 
+    }
+  ' "$boot_config"
+done
+
 PKG_FILE="$PROFILE_DIR/packages.$ARCH"
 if [[ ! -f "$PKG_FILE" ]]; then
   printf 'Could not find packages.%s in the supplied Archiso profile.\n' "$ARCH" >&2
