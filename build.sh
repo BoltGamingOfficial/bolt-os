@@ -55,14 +55,23 @@ BOOT_CONFIGS=(
   "$PROFILE_DIR"/grub/*.cfg
   "$PROFILE_DIR"/syslinux/*.cfg
 )
+BOOT_ENTRIES_UPDATED=0
 for boot_config in "${BOOT_CONFIGS[@]}"; do
   [[ -f "$boot_config" ]] || continue
-  sed -i -E '
-    /^[[:space:]]*(options|linux|linuxefi|APPEND)[[:space:]]/ {
-      /(^|[[:space:]])cow_spacesize=/! s/[[:space:]]*$/ cow_spacesize='"$COW_SPACESIZE"'/ 
-    }
-  ' "$boot_config"
+  if ! grep -Eq '^[[:space:]]*(options|linux|linuxefi|APPEND)[[:space:]]' "$boot_config"; then
+    continue
+  fi
+  # Avoid duplicating the option if an upstream profile already defines it.
+  if grep -Eq '^[[:space:]]*(options|linux|linuxefi|APPEND)[[:space:]].*([[:space:]]|^)cow_spacesize=' "$boot_config"; then
+    continue
+  fi
+  sed -i -E "/^[[:space:]]*(options|linux|linuxefi|APPEND)[[:space:]]/ s/[[:space:]]*$/ cow_spacesize=${COW_SPACESIZE}/" "$boot_config"
+  BOOT_ENTRIES_UPDATED=$((BOOT_ENTRIES_UPDATED + 1))
 done
+if (( BOOT_ENTRIES_UPDATED == 0 )); then
+  printf 'Could not add cow_spacesize to any supported Archiso boot entry. Check the supplied profile layout.\n' >&2
+  exit 1
+fi
 
 PKG_FILE="$PROFILE_DIR/packages.$ARCH"
 if [[ ! -f "$PKG_FILE" ]]; then
