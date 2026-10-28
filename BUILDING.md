@@ -28,6 +28,22 @@ BOLT_VERSION=0.1.0-dev BOLT_ENABLE_BLUETOOTH=1 bash ./build.sh
 
 The script expects `/usr/share/archiso/configs/releng` and the current Arch package repositories. You can select another installed releng profile with `ARCHISO_PROFILE=/path/to/releng`. Build output goes to `out/`; intermediate files go to `work/`. Override either with `OUT_DIR` or `WORK_DIR`.
 
+## Writable storage in the live session
+
+Archiso's default writable copy-on-write overlay is only 256 MiB. That is too
+small for this gaming image: game launchers and applications may download large
+asset caches into the live filesystem. The BOLT build script adds
+`cow_spacesize=1G` to the supported systemd-boot, GRUB, and Syslinux kernel
+command lines, giving the overlay a **1 GiB maximum**. This tmpfs limit grows on
+demand; it does not reserve 1 GiB at boot, but using it still consumes RAM as
+files are written. It is a temporary live-session limit, not persistent disk
+space, and its contents disappear when the session ends.
+
+For large game downloads, allocate enough RAM to the VM (4 GiB or more is a
+more sensible starting point than 2 GiB) and monitor `free -h` alongside
+`df -h /`. If the overlay fills again, inspect both the actual writable
+filesystem and available memory before increasing the limit further.
+
 Building an Arch ISO is supported on Arch Linux. Other environments can work but are not our initial supported build host. Run the build with the permissions required by your Archiso version.
 
 ## VirtualBox guest integration
