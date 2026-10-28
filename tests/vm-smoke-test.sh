@@ -27,7 +27,7 @@ printf 'CPU / virtualization snapshot:\\n'
 lscpu 2>/dev/null | grep -E '^(Architecture|CPU\\(s\\)|Model name|Hypervisor vendor|Virtualization type):' || true
 printf '\\nMemory snapshot (wait three minutes after login for comparable measurements):\\n'
 free -h
-cat /proc/meminfo | grep -E 'MemTotal|MemAvailable|SwapTotal|SwapFree' || true
+grep -E 'MemTotal|MemAvailable|SwapTotal|SwapFree' /proc/meminfo || true
 printf '\\nBoot and failed-unit snapshot:\\n'
 systemd-analyze time || true
 systemd-analyze blame --no-pager 2>/dev/null | head -n 15 || true
