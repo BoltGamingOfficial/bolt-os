@@ -34,10 +34,15 @@ This repository is also the planning vault for [Obsidian](https://obsidian.md/).
 - **Gaming:** Steam, Lutris, Prism Launcher, Vulkan and 32-bit Vulkan libraries, GameMode, Gamescope, MangoHud.
 - **Everyday app:** Firefox.
 - **Networking/audio:** NetworkManager and PipeWire/WirePlumber.
+- **Virtual machines:** VirtualBox guest utilities are included in the image; clipboard and drag-and-drop still require host-side VirtualBox settings and compatible guest-session support.
 - **Runtime policy:** game launchers do not autostart; Bluetooth packages are present but the daemon is opt-in at build time; OpenCode remains optional and user-launched.
-- **Brand:** gold wallpaper with a black lightning bolt.
+- **Brand:** gold wallpaper with a black lightning bolt, applied through KDE session autostart.
 
 TLauncher is **not bundled** in the base image at this stage: it is not an official Arch repository package, so adding a third-party launcher binary without a verified source, integrity check, and security review would conflict with BOLT OS's transparency and user-control goals. It can be revisited as a clearly opt-in, user-installed application after that review.
+
+## Persistence warning
+
+The ISO is a **temporary live environment**. Files, Prism Launcher instances, account tokens, browser profiles, and settings stored only in the live session are not expected to survive reboot. Do not use the live ISO to store important data or treat it as an installed OS. A persistent installed system requires an installer and a tested on-disk installation; neither is implemented yet.
 
 ## Release status
 
@@ -48,6 +53,8 @@ TLauncher is **not bundled** in the base image at this stage: it is not an offic
 | Reproducible build from documented instructions | Not yet independently reproduced |
 | UEFI boot and KDE live session | Must be tested on the exact artifact |
 | Networking, audio, input, scaling, shutdown | Not fully verified |
+| VirtualBox guest utilities in image | Added in source; fresh ISO build and clipboard/drag-and-drop behavior still need verification |
+| Correct default BOLT wallpaper | KDE autostart added in source; fresh ISO must be boot-tested to verify |
 | Installed-system installer | Not implemented |
 | KDE/BOLT settings persistent across reboot and shutdown | Not verified; live sessions are ephemeral |
 | Balanced/Gaming/Performance/Battery presets | Not implemented and tested end-to-end |

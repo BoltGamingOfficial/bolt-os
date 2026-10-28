@@ -79,6 +79,9 @@ fi
 if [[ -f "$PROFILE_DIR/airootfs/usr/local/bin/bolt-preset" ]]; then
   chmod 0755 "$PROFILE_DIR/airootfs/usr/local/bin/bolt-preset"
 fi
+if [[ -f "$PROFILE_DIR/airootfs/usr/local/libexec/bolt-set-wallpaper-once" ]]; then
+  chmod 0755 "$PROFILE_DIR/airootfs/usr/local/libexec/bolt-set-wallpaper-once"
+fi
 
 # Ship the repeatable VM smoke-test script with the live image for easy diagnostics.
 if [[ -f "$ROOT_DIR/tests/vm-smoke-test.sh" ]]; then
@@ -109,6 +112,10 @@ ln -sfn /usr/lib/systemd/system/NetworkManager.service \
 # Provide the supported system power-profile API for BOLT preset selection.
 ln -sfn /usr/lib/systemd/system/power-profiles-daemon.service \
   "$SYSTEMD_TREE/multi-user.target.wants/power-profiles-daemon.service"
+# VirtualBox guest utilities improve VM integration. This is harmless on
+# physical hardware; the service will use the guest driver when available.
+ln -sfn /usr/lib/systemd/system/vboxservice.service \
+  "$SYSTEMD_TREE/multi-user.target.wants/vboxservice.service"
 if [[ "$BOLT_ENABLE_BLUETOOTH" == "1" ]]; then
   ln -sfn /usr/lib/systemd/system/bluetooth.service \
     "$SYSTEMD_TREE/multi-user.target.wants/bluetooth.service"

@@ -46,6 +46,10 @@ xorg-xwayland
 xdg-desktop-portal
 xdg-desktop-portal-kde
 
+# Optional VM integration; the guest service is enabled by build.sh.
+# Host-side clipboard and drag/drop permissions still must be enabled in VirtualBox.
+virtualbox-guest-utils
+
 # Linux graphics / Vulkan
 mesa
 vulkan-icd-loader
