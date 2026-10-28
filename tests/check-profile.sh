@@ -30,4 +30,11 @@ grep -Fq 'BOLT_ENABLE_BLUETOOTH="${BOLT_ENABLE_BLUETOOTH:-0}"' "$BUILD_FILE" ||
 grep -Fq 'BOLT_ENABLE_BLUETOOTH=1' "$ROOT_DIR/BUILDING.md" ||
   fail "BUILDING.md must document the Bluetooth opt-in"
 
+grep -Fq 'COW_SPACESIZE="1G"' "$BUILD_FILE" ||
+  fail "build.sh must set a larger Archiso writable overlay"
+grep -Fq 'cow_spacesize=' "$BUILD_FILE" ||
+  fail "build.sh must pass cow_spacesize to supported boot entries"
+grep -Fq '1 GiB' "$ROOT_DIR/BUILDING.md" ||
+  fail "BUILDING.md must document the live overlay size and trade-off"
+
 printf 'PASS: manifest, required packages, build syntax, and Bluetooth policy checks\n'
