@@ -76,8 +76,12 @@ jobs:
           df -h "$GITHUB_WORKSPACE" || true
           bash ./build.sh
 
-      - name: Upload ISO and checksums as a workflow artifact
+      # Workflow artifacts are a convenience only. If the repository's
+      # Actions storage quota is exhausted, continue so the release assets
+      # can still be published.
+      - name: Upload ISO and checksums as a best-effort workflow artifact
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: bolt-os-${{ inputs.version || '0.1.0-dev' }}-x86_64
           path: |
@@ -115,8 +119,8 @@ jobs:
 
             sha256sum -c SHA256SUMS
 
-          The full, unsplit ISO is also available in the GitHub Actions
-          workflow artifact for this run (retained for 7 days).
+          A full, unsplit ISO may also be available as a GitHub Actions
+          workflow artifact when the repository's Actions storage quota allows it.
           EOF
           echo "Release assets and sizes:"
           ls -lh out/release-assets/
