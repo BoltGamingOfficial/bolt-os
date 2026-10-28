@@ -22,12 +22,25 @@ check() {
 
 printf 'BOLT OS VM smoke test\nDate: %s\nHost: %s\nKernel: %s\n' \
   "$(date -Is)" "$(hostname)" "$(uname -r)"
-printf 'Session: %s\nDesktop: %s\n' "${XDG_SESSION_TYPE:-unknown}" "${XDG_CURRENT_DESKTOP:-unknown}"
-printf 'Memory snapshot:\n'
+printf 'Session: %s\\nDesktop: %s\\n' "${XDG_SESSION_TYPE:-unknown}" "${XDG_CURRENT_DESKTOP:-unknown}"
+printf 'CPU / virtualization snapshot:\\n'
+lscpu 2>/dev/null | grep -E '^(Architecture|CPU\\(s\\)|Model name|Hypervisor vendor|Virtualization type):' || true
+printf '\\nMemory snapshot (wait three minutes after login for comparable measurements):\\n'
 free -h
-printf '\nBoot and failed-unit snapshot:\n'
+cat /proc/meminfo | grep -E 'MemTotal|MemAvailable|SwapTotal|SwapFree' || true
+printf '\\nBoot and failed-unit snapshot:\\n'
 systemd-analyze time || true
+systemd-analyze blame --no-pager 2>/dev/null | head -n 15 || true
 systemd-analyze --failed --no-pager || true
+printf '\\nVirtualBox guest integration:\\n'
+systemctl --no-pager status vboxservice.service 2>&1 || true
+pgrep -af 'VBoxClient|kwin_wayland|kwin_x11|plasmashell' || true
+printf '\\nGraphics renderer (if glxinfo is available):\\n'
+if command -v glxinfo >/dev/null 2>&1; then
+  glxinfo -B 2>&1 || true
+else
+  printf 'glxinfo is not installed; renderer could not be queried by this script.\\n'
+fi
 
 check "Firefox executable is installed" command -v firefox
 check "Steam executable is installed" command -v steam
