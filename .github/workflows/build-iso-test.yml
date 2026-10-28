@@ -1,4 +1,4 @@
-name: Build BOLT OS test ISO (artifact only)
+name: Build and validate BOLT OS test ISO
 
 on:
   push:
@@ -66,8 +66,11 @@ jobs:
           test -s out/SHA256SUMS
           find out -maxdepth 1 -type f -name '*.iso' -size +0c -print -quit | grep -q .
 
-      - name: Upload ISO and checksum as workflow artifact
+      # Artifact storage can be exhausted independently of the ISO build.
+      # Keep build validation useful even when upload is temporarily unavailable.
+      - name: Upload ISO and checksum as a best-effort workflow artifact
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: bolt-os-test-${{ inputs.version || '0.1.0-dev-test' }}-x86_64
           path: |
