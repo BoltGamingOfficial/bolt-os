@@ -53,7 +53,11 @@ fi
 # Union upstream live-image utilities with BOLT's desktop and gaming set.
 # Sorting and de-duplicating prevents duplicate pacman targets.
 TMP_PACKAGES="$(mktemp)"
+# The upstream releng profile includes the no-X VirtualBox guest package.
+# BOLT ships the full guest utilities for desktop integration; these packages
+# conflict, so exclude the no-X variant before resolving the combined package set.
 grep -hEv '^[[:space:]]*(#|$)' "$PKG_FILE" "$ROOT_DIR/packages.x86_64" |
+  grep -vx 'virtualbox-guest-utils-nox' |
   LC_ALL=C sort -u > "$TMP_PACKAGES"
 cat "$TMP_PACKAGES" > "$PKG_FILE"
 rm -f -- "$TMP_PACKAGES"
