@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 run_hook() {
   local device attempt mem_total_kib overlay_kib medium lower writable newroot
+  attempt=1
   device=""
   medium=/run/bolt/medium
   lower=/run/bolt/lower
@@ -8,10 +9,11 @@ run_hook() {
   newroot=/newroot
 
   mkdir -p "$medium" "$lower" "$writable" "$newroot"
-  for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+  while [ "$attempt" -le 30 ]; do
     device="$(blkid -L BOLT_LIVE 2>/dev/null)"
     [ -n "$device" ] && break
     sleep 1
+    attempt=$((attempt + 1))
   done
   if [ -z "$device" ]; then
     echo 'BOLT: cannot find boot medium labelled BOLT_LIVE.'

@@ -23,7 +23,7 @@ bolt_valid_layout() {
   local candidate="$1"
   [[ "$candidate" =~ ^[A-Za-z0-9_-]{2,12}$ ]] || return 1
   [[ -r /usr/share/X11/xkb/rules/base.lst ]] || return 1
-  grep -Eq "^[[:space:]]+$candidate[[:space:]]+" /usr/share/X11/xkb/rules/base.lst
+  grep -Eq "^[[:space:]]+${candidate}[[:space:]]+" /usr/share/X11/xkb/rules/base.lst
 }
 
 bolt_passwords_valid() {

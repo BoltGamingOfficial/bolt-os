@@ -31,7 +31,7 @@ jobs:
       options: --privileged
     steps:
       - name: Install build tools
-        run: pacman -Syu --noconfirm --needed arch-install-scripts mkinitcpio squashfs-tools xorriso limine shellcheck git qemu-system-x86 edk2-ovmf
+        run: pacman -Syu --noconfirm --needed arch-install-scripts mkinitcpio squashfs-tools xorriso limine shellcheck git qemu-system-x86 edk2-ovmf xkeyboard-config tzdata
       - name: Check out source
         uses: actions/checkout@v4
       - name: Source, unit, and lint checks

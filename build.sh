@@ -171,6 +171,7 @@ install -m 0644 "$ROOTFS/boot/intel-ucode.img" "$ISO_ROOT/BOLT/boot/intel-ucode.
 install -m 0644 "$ROOTFS/boot/amd-ucode.img" "$ISO_ROOT/BOLT/boot/amd-ucode.img"
 install -m 0644 "$ROOTFS/boot/initramfs-bolt.img" "$ISO_ROOT/BOLT/boot/initramfs-bolt.img"
 install -m 0644 "$ROOT_DIR/limine.conf" "$ISO_ROOT/boot/limine/limine.conf"
+install -m 0644 "$ROOT_DIR/branding/bolt-boot.png" "$ISO_ROOT/BOLT/bolt-boot.png"
 for boot_file in limine-bios-cd.bin limine-uefi-cd.bin limine-bios.sys BOOTX64.EFI; do
   [[ -s "/usr/share/limine/$boot_file" ]] || fail "Limine package file is missing: /usr/share/limine/$boot_file"
 done
