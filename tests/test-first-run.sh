@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-ROOT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run"
 export BOLT_FIRST_RUN_TEST_ONLY=1
 # shellcheck disable=SC1090
