@@ -1,64 +1,41 @@
 # BOLT OS
 
-**A customizable, gaming-first Linux operating system.**
+**Development live-image source for a minimal KDE gaming desktop.** This branch is an experimental build recipe, not a stable release or an installer.
 
-This repository is also the planning vault for [Obsidian](https://obsidian.md/). Open the repository folder as a vault to navigate the project notes.
+BOLT uses official Arch package repositories as its binary package source, but owns its live-image layout: Limine boot configuration, the `/BOLT/boot/` directory, the `/BOLT/system.squashfs` image, the `BOLT_LIVE` medium label, and a custom mkinitcpio hook. It does not copy the standard Arch live-image profile or use the Arch ISO build framework.
 
-> [!warning] Experimental development build
-> BOLT OS is an early Archiso-based live prototype. CI can produce development ISO artifacts, but the current image has **not yet passed the complete boot, hardware, installer, persistence, or gaming release gates**. Do not replace a working operating system or use the image with irreplaceable data.
+## What is included
 
-## Start here
+- KDE Plasma with a focused desktop shell, panel, launcher, system tray, network and audio applets, display controls, and power settings. The Xorg server is retained for SDDM greeter compatibility; the intended desktop session is Wayland.
+- Steam plus Lutris. Lutris is the single additional game launcher: it covers non-Steam libraries and game installers without adding multiple overlapping launcher frontends.
+- Vulkan/OpenGL userspace for Intel and AMD Mesa drivers, plus NVIDIA's open kernel-module driver and matching userspace. 32-bit graphics and audio libraries are included for Steam/Proton.
+- GameMode, Gamescope, and MangoHud.
+- NetworkManager, PipeWire/WirePlumber, and power-profiles-daemon. Bluetooth is not installed or started.
+- Gold-and-black BOLT branding in the Limine menu, SDDM theme, and Plasma wallpaper.
+- A TTY first-run account wizard that collects a username, password and confirmation, timezone, and XKB keyboard layout before SDDM may start.
 
-- [[BOLT OS Dashboard]]
-- [[Vision and Goals]]
-- [[System Architecture]]
-- [[Gaming Experience]]
-- [[Hardware Compatibility]]
-- [[Branding]]
-- [[Roadmap]]
-- [[Open Questions]]
+No AI agents, usage telemetry, advertising, or background game launchers are included. Steam, Lutris, Gamescope, and MangoHud do not start automatically.
 
-## Build and test
+## First boot and security
 
-- [Build instructions](BUILDING.md)
-- [[Memory Budget]] — performance goals and measurement procedure
-- [[Performance & RAM Integration Handoff]] — current evidence and outstanding work
-- `build.sh` — shared Archiso build entry point
-- [Development ISO workflow](https://github.com/BoltGamingOfficial/bolt-os/actions/workflows/build-iso-test.yml)
-- [Repository quality checks](https://github.com/BoltGamingOfficial/bolt-os/actions/workflows/quality.yml)
+There is no pre-created desktop account and no default password. The root account is locked. The first-run wizard creates the user's account, hashes the password with OpenSSL SHA-512 crypt, installs the hash using `chpasswd --encrypted`, sets timezone and keyboard settings, and records completion without recording the password or hash. The SDDM unit requires successful first-run completion. The wheel sudo rule requires the user's password; there is no passwordless sudo or SDDM autologin.
 
-## Current implementation
+If setup is cancelled or fails, SDDM remains blocked. Reboot to retry the first-run wizard.
 
-- **Base:** Arch Linux and upstream Archiso live-image infrastructure.
-- **Desktop:** KDE Plasma with SDDM.
-- **Gaming:** Steam, Lutris, Prism Launcher, Vulkan and 32-bit Vulkan libraries, GameMode, Gamescope, MangoHud.
-- **Everyday app:** Firefox.
-- **Networking/audio:** NetworkManager and PipeWire/WirePlumber.
-- **Virtual machines:** VirtualBox guest utilities are included in the image; clipboard and drag-and-drop still require host-side VirtualBox settings and compatible guest-session support.
-- **Runtime policy:** game launchers do not autostart; Bluetooth packages are present but the daemon is opt-in at build time; OpenCode remains optional and user-launched.
-- **Brand:** gold wallpaper with a black lightning bolt, applied through KDE session autostart.
+## Live-image behavior
 
-TLauncher is **not bundled** in the base image at this stage: it is not an official Arch repository package, so adding a third-party launcher binary without a verified source, integrity check, and security review would conflict with BOLT OS's transparency and user-control goals. It can be revisited as a clearly opt-in, user-installed application after that review.
+The image is ephemeral. The writable overlay is a tmpfs whose configured upper bound is 50% of detected physical RAM; tmpfs allocates memory as files are written, so the cap is not pre-reserved RAM and is not disk capacity. Changes are lost on reboot. The build report records ISO and compressed/uncompressed image sizes; idle RAM and installed disk footprint are deliberately not reported until measured on a booted system and a tested installer exists.
 
-## Persistence warning
+## Hardware scope
 
-The ISO is a **temporary live environment**. Files, Prism Launcher instances, account tokens, browser profiles, and settings stored only in the live session are not expected to survive reboot. Do not use the live ISO to store important data or treat it as an installed OS. A persistent installed system requires an installer and a tested on-disk installation; neither is implemented yet.
+Target: x86_64 UEFI PCs with Intel or AMD CPUs. BIOS compatibility is also included in the hybrid ISO. Intel and AMD Vulkan support uses Mesa. NVIDIA support uses the open kernel-module driver and is intended for Turing-generation and newer GPUs; older NVIDIA generations are not claimed to work with this build. The official kernel package may still expose its upstream Arch build suffix in `uname -r`; the distro does not yet carry a separately branded kernel build. Secure Boot is not configured or signed in this development image and should be disabled for testing.
 
-## Release status
+## Build and validation
 
-| Gate | Status |
-|---|---|
-| CI ISO build and checksum generation | Implemented; prior CI build succeeded for a development commit |
-| Release ISO split into uploadable chunks | Implemented in the main-branch release workflow; verify the latest run's assets |
-| Reproducible build from documented instructions | Not yet independently reproduced |
-| UEFI boot and KDE live session | Must be tested on the exact artifact |
-| Networking, audio, input, scaling, shutdown | Not fully verified |
-| VirtualBox guest utilities in image | Added in source; fresh ISO build and clipboard/drag-and-drop behavior still need verification |
-| Correct default BOLT wallpaper | KDE autostart added in source; fresh ISO must be boot-tested to verify |
-| Installed-system installer | Not implemented |
-| KDE/BOLT settings persistent across reboot and shutdown | Not verified; live sessions are ephemeral |
-| Balanced/Gaming/Performance/Battery presets | Not implemented and tested end-to-end |
-| RAM, boot, idle CPU, gaming frame-time measurements | Not recorded; performance targets are not claims |
-| Physical hardware compatibility | Not yet established across Intel, AMD, and NVIDIA |
+See [BUILDING.md](BUILDING.md) for a clean Arch Linux host procedure. The build validates package names against the enabled official repositories before installing them, runs source/unit/lint checks, creates a zstd-compressed root image, builds a hybrid Limine ISO, and writes SHA-256 checksums and logs.
 
-A successful workflow means the ISO was built and the artifact uploaded; it does not prove the ISO boots or works on physical hardware. Keep all development artifacts labeled experimental until the relevant gates are tested and recorded.
+**No installer is shipped.** The repository does not yet contain a safe disk installer, partitioning workflow, explicit disk-wipe confirmation, or tested installed-system bootloader setup. The live ISO must not be presented as an installable system and will not format any disk.
+
+## Project status
+
+Experimental development source. A release is not stable until the live image boots on UEFI VMs and physical Intel/AMD/NVIDIA hardware, first-run and authentication gates are verified, graphics and audio are tested, runtime memory is measured, and a separate safe installer has passed destructive-action and persistence tests.

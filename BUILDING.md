@@ -1,73 +1,76 @@
-# Building the BOLT OS Live Prototype
+# Building BOLT OS
 
-## Status and scope
+## Supported build host
 
-The repository has an initial Archiso-based **live-image build recipe**. This is not yet a validated release, and the project does not yet have a dedicated installer that lays down a complete BOLT OS installation on disk. Treat early images as experimental; do not replace your working operating system or store irreplaceable data on a test machine.
+Use a current, fully updated x86_64 Arch Linux host with root access and a working official repository/mirror configuration. The build uses a separate root filesystem and work directory; do not build on a production machine with insufficient free storage. The build does not update the host packages, but it refreshes the package databases for resolution.
 
-The build starts from the installed Archiso `releng` profile to preserve its supported boot infrastructure, then adds BOLT's package list and live-session overlay. See the current [Archiso documentation](https://wiki.archlinux.org/title/Archiso).
-
-## Build host
-
-Use a current x86-64 Arch Linux machine with enough free disk space for package caches, the working tree, and the generated ISO. Install the build tools:
+Install the tools:
 
 ```sh
-sudo pacman -Syu --needed archiso shellcheck
+sudo pacman -Syu --needed arch-install-scripts mkinitcpio squashfs-tools xorriso limine shellcheck git
 ```
 
-Clone the repository, then run:
+Clone and build:
 
 ```sh
-BOLT_VERSION=0.1.0-dev bash ./build.sh
+git clone https://github.com/BoltGamingOfficial/bolt-os.git
+cd bolt-os
+git switch delivery/bolt-clean-build
+sudo env BOLT_VERSION=0.2.0-dev \\
+  DELIVERY_DIR="$PWD/BOLT-OS-DELIVERY" \\
+  WORK_DIR="/var/tmp/bolt-os-build" \\
+  ./build.sh
 ```
 
-Bluetooth support is installed but the daemon is not enabled at boot by default. To build an image that starts Bluetooth automatically, use `BOLT_ENABLE_BLUETOOTH=1`:
+The build creates a temporary pacman configuration containing only the official `core`, `extra`, and `multilib` repositories, so it does not require changing the host pacman configuration. It exits before rootfs creation if the host is not Arch Linux, required tools are missing, or any package in `packages.x86_64` cannot be resolved through the configured official repositories. It invokes ShellCheck and the local source/unit tests before package installation. It does not run an unverified third-party installer or modify a target disk.
+
+The build creates:
+
+```text
+BOLT-OS-DELIVERY/
+  iso/          BOLT-OS-<version>-x86_64.iso
+  checksums/    ISO SHA-256 checksum file
+  logs/         timestamped build log
+  testing/      ISO structure report, file listing, and size measurements
+```
+
+Verify the checksum:
 
 ```sh
-BOLT_VERSION=0.1.0-dev BOLT_ENABLE_BLUETOOTH=1 bash ./build.sh
+cd BOLT-OS-DELIVERY/iso
+sha256sum -c ../checksums/BOLT-OS-0.2.0-dev-x86_64.iso.sha256
 ```
 
-The script expects `/usr/share/archiso/configs/releng` and the current Arch package repositories. You can select another installed releng profile with `ARCHISO_PROFILE=/path/to/releng`. Build output goes to `out/`; intermediate files go to `work/`. Override either with `OUT_DIR` or `WORK_DIR`.
+## Boot architecture
 
-Building an Arch ISO is supported on Arch Linux. Other environments can work but are not our initial supported build host. Run the build with the permissions required by your Archiso version.
+The ISO uses Limine 12, with the Limine BIOS and EFI CD images plus the x86_64 EFI loader. The kernel, microcode, and custom initramfs live under `/BOLT/boot/`; the root filesystem is `/BOLT/system.squashfs`; the filesystem label is `BOLT_LIVE`. The custom initramfs hook locates that label, mounts the ISO and squashfs, creates an overlay upper layer with a 50%-of-detected-RAM tmpfs size cap, moves the API filesystems, and switches to systemd in the overlay root.
 
-## VirtualBox guest integration
+The live initramfs and ISO boot entries are BOLT-defined. Arch packages remain the software source; this is not a new independent kernel or package ecosystem.
 
-The ISO package list includes Arch's `virtualbox-guest-utils` package, and the build enables `vboxservice.service`. The package supplies guest-side integration helpers, including `VBoxClient` autostart for desktop sessions. This is intended to improve pointer integration, dynamic display sizing, clipboard sharing, and drag-and-drop in VirtualBox guests.
+## Package and graphics choices
 
-**The host VM must also allow these features.** On the Windows host, fully shut down the VM and open VirtualBox Manager → select the BOLT VM → **Settings → General → Advanced**. Set **Shared Clipboard** to **Bidirectional** and **Drag'n'Drop** to **Bidirectional**. If the options are disabled or integration still does not work, check the VirtualBox host version and guest session type. Guest Additions and the host VirtualBox version should be compatible; clipboard and drag-and-drop support can vary by display session, so try a Plasma X11 session if the Wayland session does not provide the required integration.
+- `steam` comes from the multilib repository. The build always enables multilib in its temporary package-manager configuration without changing the host configuration.
+- Intel and AMD Vulkan stacks use `vulkan-intel`, `vulkan-radeon`, and their `lib32-` packages.
+- NVIDIA uses `nvidia-open` plus matching `nvidia-utils` and `lib32-nvidia-utils`, not multiple NVIDIA driver branches. This choice is for Turing-and-newer hardware; Maxwell, Pascal, and Volta-era GPUs are not claimed to be supported by this official-repository-only build.
+- Lutris is the only extra launcher beyond Steam. GameMode, Gamescope, and MangoHud provide game-session optimization, compositor support, and overlays without persistent background services.
 
-This support is specifically for VirtualBox. Other hypervisors do not gain their guest tools from this package. Host-side options are not changed automatically by the ISO.
+## VM and hardware test
 
-## Persistence: important limitation
-
-The live ISO is ephemeral. Files and user settings created only inside the live session—including Prism Launcher instances, account tokens, browser profiles, and desktop settings—can disappear when the VM reboots. This is expected behavior for the current prototype, not a safe persistent installation.
-
-Do not store important accounts or files only in a live ISO session. An installed BOLT OS needs a dedicated installer and a tested on-disk installation path; those are not implemented yet. Persistence is a release blocker and must be tested across reboot and full shutdown before we describe an installed release as usable.
-
-## Test before distribution
-
-After a successful build, verify the file hash and boot it in a virtual machine before using a USB stick:
+A boot test requires QEMU with OVMF firmware on a host with virtualization enabled. After building, run the included UEFI probe (it locates OVMF firmware and falls back to TCG when KVM is unavailable):
 
 ```sh
-(cd out && sha256sum -c SHA256SUMS)
-run_archiso -i out/bolt-os-0.1.0-dev-x86_64.iso
+QEMU_REPORT_DIR="$PWD/BOLT-OS-DELIVERY/testing" \\
+  bash tests/qemu-uefi-smoke.sh "$PWD/BOLT-OS-DELIVERY/iso/BOLT-OS-0.2.0-dev-x86_64.iso"
 ```
 
-The exact ISO filename is determined by the installed Archiso version and build profile; use `ls -lh out/` if it differs from the example. On the VM, verify:
-- UEFI/BIOS boot path available in the image
-- SDDM opens the KDE Plasma live desktop
-- the default gold-and-black BOLT wallpaper is applied
-- Wi-Fi/Ethernet, audio, Vulkan detection, and session shutdown work
-- shared clipboard and drag-and-drop work after enabling them in VirtualBox host settings
-- Steam starts only when manually launched
-- no AI application starts at login
-- the live-only user and passwordless sudo rule do not leak into a future disk installer
-- memory measurements are recorded according to [[Memory Budget]]
+The Arch `edk2-ovmf` package installs split UEFI firmware under `/usr/share/edk2/x64/OVMF_CODE.4m.fd` and `OVMF_VARS.4m.fd`; the included QEMU smoke script locates the pair automatically. First-run setup is intentionally interactive. After account creation and desktop login, run:
 
-## Important notes
+```sh
+/usr/local/share/bolt-os/tests/vm-smoke-test.sh
+```
 
-- The default package list includes Steam and gaming utilities, but they do not need to run in the background.
-- VirtualBox guest integration is included for convenience but is not a substitute for testing on physical hardware or other hypervisors.
-- The live ISO is ephemeral; files and user settings do not survive a reboot unless explicitly saved elsewhere.
-- An installable release needs a separate, tested installer and post-install setup path. Do not mistake the live desktop for that installer.
-- Arch Linux is rolling release, so rebuild and test periodically against current packages.
+The smoke test records memory, boot timing, resident processes, services, and core application availability. It does not replace manual display/audio tests, a Vulkan renderer check, Steam game launch, or hardware validation on each GPU vendor.
+
+## Scope limitations
+
+This deliverable builds a live ISO only. It has no Calamares integration, no partitioner, no disk-install mode, no filesystem creation, and no installed-system bootloader workflow. Do not try to install it to a disk or describe it as persistent. A separate installer must be engineered and tested before that claim is made.

@@ -65,7 +65,7 @@ bolt_main() {
   done
 
   while true; do
-    password="$(bolt_prompt --passwordbox 'Choose a password (at least 12 characters recommended):' 10 72)" || return 1
+    password="$(bolt_prompt --passwordbox 'Choose a password (minimum 12 characters):' 10 72)" || return 1
     password_confirm="$(bolt_prompt --passwordbox 'Confirm your password:' 10 72)" || return 1
     if bolt_passwords_valid "$password" "$password_confirm"; then
       break

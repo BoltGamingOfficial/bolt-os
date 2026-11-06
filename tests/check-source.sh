@@ -33,6 +33,7 @@ grep -Fq 'chpasswd --encrypted' "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt
 grep -Fq 'gamemode' "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" || fail 'GameMode group is not included when available'
 grep -Fq 'openssl passwd -6 -stdin' "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" || fail 'password hashing command missing'
 grep -Fq 'Requires=bolt-first-run.service' "$ROOT_DIR/rootfs-overlay/etc/systemd/system/sddm.service.d/10-bolt-first-run.conf" || fail 'SDDM is not gated by first-run setup'
+grep -Fq 'Conflicts=getty@tty1.service' "$ROOT_DIR/rootfs-overlay/etc/systemd/system/bolt-first-run.service" || fail 'first-run wizard may race with the tty1 getty'
 grep -Fq 'first-run-complete' "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" || fail 'first-run completion marker handling missing'
 grep -Fq 'interface_branding: BOLT OS' "$ROOT_DIR/limine.conf" || fail 'Limine branding missing'
 grep -Fq 'BOLT_LIVE' "$ROOT_DIR/mkinitcpio/hooks/bolt_live" || fail 'custom boot medium label missing'
