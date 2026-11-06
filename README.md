@@ -32,7 +32,7 @@ Target: x86_64 UEFI PCs with Intel or AMD CPUs. Intel and AMD Vulkan support use
 
 ## Build and validation
 
-See [BUILDING.md](BUILDING.md) for a clean Arch Linux host procedure. The build validates package names against the enabled official repositories before installing them, runs source/unit/lint checks, creates a zstd-compressed root image, builds a hybrid Limine ISO, and writes SHA-256 checksums and logs.
+See [BUILDING.md](BUILDING.md) for a clean Arch Linux host procedure. The build validates package names against the enabled official repositories before installing them, runs source/unit/lint checks, creates a zstd-compressed root image, builds a UEFI El Torito Limine ISO for optical/VM boot, and writes SHA-256 checksums and logs.
 
 **No installer is shipped.** The repository does not yet contain a safe disk installer, partitioning workflow, explicit disk-wipe confirmation, or tested installed-system bootloader setup. The live ISO must not be presented as an installable system and will not format any disk.
 

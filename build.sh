@@ -78,7 +78,7 @@ done
 log "Validated ${#PACKAGES[@]} package names against the enabled official repositories."
 
 rm -rf -- "$ROOTFS" "$ISO_ROOT"
-mkdir -p "$ROOTFS" "$ISO_ROOT/BOLT/boot" "$ISO_ROOT/boot/limine" "$ISO_ROOT/EFI/BOOT"
+mkdir -p "$ROOTFS" "$ISO_ROOT/BOLT/boot" "$ISO_ROOT/boot/limine"
 
 log 'Installing the minimal system to the isolated root filesystem.'
 pacstrap -K -C "$PACMAN_CONF" "$ROOTFS" "${PACKAGES[@]}"
@@ -177,9 +177,7 @@ mksquashfs "$ROOTFS" "$ISO_ROOT/BOLT/system.squashfs" -comp zstd -Xcompression-l
 log 'Staging the independent Limine boot tree.'
 install -m 0644 "$ROOT_DIR/limine.conf" "$ISO_ROOT/boot/limine/limine.conf"
 install -m 0644 "$ROOT_DIR/branding/bolt-boot.png" "$ISO_ROOT/BOLT/bolt-boot.png"
-for boot_file in limine-uefi-cd.bin; do
-  [[ -s "/usr/share/limine/$boot_file" ]] || fail "Limine package file is missing: /usr/share/limine/$boot_file"
-done
+[[ -s /usr/share/limine/limine-uefi-cd.bin ]] || fail 'Limine EFI CD boot image is missing: /usr/share/limine/limine-uefi-cd.bin'
 install -m 0644 /usr/share/limine/limine-uefi-cd.bin "$ISO_ROOT/boot/limine/limine-uefi-cd.bin"
 
 cat > "$ISO_ROOT/BOLT/build-info.txt" <<INFO
