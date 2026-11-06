@@ -17,7 +17,7 @@ for script in "${scripts[@]}"; do bash -n "$script" || fail "shell syntax: $scri
 packages="$ROOT_DIR/packages.x86_64"
 duplicates="$(grep -Ev '^[[:space:]]*(#|$)' "$packages" | LC_ALL=C sort | uniq -d)"
 [[ -z "$duplicates" ]] || fail "duplicate packages: $duplicates"
-for package in base mkinitcpio linux linux-firmware networkmanager wpa_supplicant dbus-broker-units plasma-desktop sddm xorg-server steam lutris gamemode gamescope mangohud mesa lib32-mesa vulkan-intel vulkan-radeon lib32-vulkan-intel lib32-vulkan-radeon nvidia-open nvidia-utils lib32-nvidia-utils; do
+for package in base mkinitcpio linux linux-firmware networkmanager wpa_supplicant dbus-broker-units kbd xkeyboard-config plasma-desktop sddm xorg-server steam lutris gamemode gamescope mangohud mesa lib32-mesa vulkan-intel vulkan-radeon lib32-vulkan-intel lib32-vulkan-radeon nvidia-open nvidia-utils lib32-nvidia-utils; do
   grep -Fxq "$package" "$packages" || fail "required package missing: $package"
 done
 for forbidden in bluez firefox prismlauncher archiso mkarchiso opencode ollama; do
