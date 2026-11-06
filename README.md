@@ -2,7 +2,7 @@
 
 **Development live-image source for a minimal KDE gaming desktop.** This branch is an experimental build recipe, not a stable release or an installer.
 
-BOLT uses official Arch package repositories as its binary package source, but owns its live-image layout: Limine boot configuration, the `/BOLT/boot/` directory, the `/BOLT/system.squashfs` image, the `BOLT_LIVE` medium label, and a custom mkinitcpio hook. The build uses UEFI El Torito boot plus legacy-BIOS hybrid MBR; UEFI boot from USB-written media is not yet claimed or verified. It does not copy the standard Arch live-image profile or use the Arch ISO build framework.
+BOLT uses official Arch package repositories as its binary package source, but owns its live-image layout: Limine boot configuration, the `/BOLT/boot/` directory, the `/BOLT/system.squashfs` image, the `BOLT_LIVE` medium label, and a custom mkinitcpio hook. The image uses UEFI El Torito boot for optical media/VMs. It is not a BIOS image or a hybrid USB image; booting after writing it to a USB stick is not supported or claimed. It does not copy the standard Arch live-image profile or use the Arch ISO build framework.
 
 ## What is included
 
@@ -28,7 +28,7 @@ The image is ephemeral. The writable overlay is a tmpfs whose configured upper b
 
 ## Hardware scope
 
-Target: x86_64 UEFI PCs with Intel or AMD CPUs. BIOS compatibility is also included in the hybrid ISO. Intel and AMD Vulkan support uses Mesa. NVIDIA support uses the open kernel-module driver and is intended for Turing-generation and newer GPUs; older NVIDIA generations are not claimed to work with this build. The official kernel package may still expose its upstream Arch build suffix in `uname -r`; the distro does not yet carry a separately branded kernel build. Secure Boot is not configured or signed in this development image and should be disabled for testing.
+Target: x86_64 UEFI PCs with Intel or AMD CPUs. Intel and AMD Vulkan support uses Mesa. NVIDIA support uses the open kernel-module driver and is intended for Turing-generation and newer GPUs; older NVIDIA generations are not claimed to work with this build. The official kernel package may still expose its upstream Arch build suffix in `uname -r`; the distro does not yet carry a separately branded kernel build. Secure Boot is not configured or signed in this development image and should be disabled for testing.
 
 ## Build and validation
 

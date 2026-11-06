@@ -177,32 +177,26 @@ mksquashfs "$ROOTFS" "$ISO_ROOT/BOLT/system.squashfs" -comp zstd -Xcompression-l
 log 'Staging the independent Limine boot tree.'
 install -m 0644 "$ROOT_DIR/limine.conf" "$ISO_ROOT/boot/limine/limine.conf"
 install -m 0644 "$ROOT_DIR/branding/bolt-boot.png" "$ISO_ROOT/BOLT/bolt-boot.png"
-for boot_file in limine-bios-cd.bin limine-uefi-cd.bin limine-bios.sys BOOTX64.EFI; do
+for boot_file in limine-uefi-cd.bin; do
   [[ -s "/usr/share/limine/$boot_file" ]] || fail "Limine package file is missing: /usr/share/limine/$boot_file"
 done
-install -m 0644 /usr/share/limine/limine-bios-cd.bin "$ISO_ROOT/boot/limine/limine-bios-cd.bin"
 install -m 0644 /usr/share/limine/limine-uefi-cd.bin "$ISO_ROOT/boot/limine/limine-uefi-cd.bin"
-install -m 0644 /usr/share/limine/limine-bios.sys "$ISO_ROOT/boot/limine/limine-bios.sys"
-install -m 0644 /usr/share/limine/BOOTX64.EFI "$ISO_ROOT/EFI/BOOT/BOOTX64.EFI"
 
 cat > "$ISO_ROOT/BOLT/build-info.txt" <<INFO
 Distribution: BOLT OS
 Version: $BOLT_VERSION
 Architecture: x86_64
-Boot manager: Limine (UEFI El Torito + legacy BIOS hybrid ISO)
+Boot manager: Limine (UEFI El Torito optical ISO)
 Kernel: $KERNEL_VERSION
 Package source: official Arch repositories (core/extra/multilib)
 Boot layout: /BOLT/boot plus /BOLT/system.squashfs
 Writable live overlay: tmpfs capped at 50% of detected physical RAM; not disk storage
 INFO
 
-log 'Creating the UEFI/BIOS hybrid ISO with the BOLT_LIVE volume label.'
+log 'Creating a UEFI El Torito ISO with the BOLT_LIVE volume label.'
 xorriso -as mkisofs -R -r -J -V BOLT_LIVE \
-  -b boot/limine/limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table \
-  -hfsplus -apm-block-size 2048 \
-  --efi-boot boot/limine/limine-uefi-cd.bin \
-  --protective-msdos-label "$ISO_ROOT" -o "$ISO_PATH"
-limine bios-install "$ISO_PATH"
+  --efi-boot boot/limine/limine-uefi-cd.bin -no-emul-boot \
+  "$ISO_ROOT" -o "$ISO_PATH"
 
 log 'Verifying ISO structure, boot catalog, and checksum.'
 xorriso -indev "$ISO_PATH" -report_el_torito plain > "$DELIVERY_DIR/testing/el-torito-report.txt" 2>&1
