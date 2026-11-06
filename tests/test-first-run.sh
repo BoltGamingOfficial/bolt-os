@@ -29,7 +29,7 @@ password='BOLT-test-only-password-928!'
 hash="$(bolt_hash_password "$password")"
 hash_again="$(bolt_hash_password "$password")"
 [[ "$hash" != "$hash_again" ]] || { echo 'FAIL: hash salt is not random' >&2; exit 1; }
-sha512_prefix='$6$'
+sha512_prefix="\$6\$"
 [[ "$hash" == "$sha512_prefix"* ]] || { echo 'FAIL: SHA-512 crypt hash prefix absent' >&2; exit 1; }
 [[ "$hash" != "$password" ]] || { echo 'FAIL: password was not hashed' >&2; exit 1; }
 unset password hash hash_again
