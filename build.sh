@@ -171,7 +171,7 @@ rm -f -- "$ROOTFS/boot/"*
 
 log 'Measuring and creating the compressed system image.'
 ROOTFS_BYTES="$(du -s --bytes "$ROOTFS" | awk '{print $1}')"
-printf 'BOLT root filesystem (uncompressed): %s bytes\\n' "$ROOTFS_BYTES"
+printf 'BOLT root filesystem (uncompressed): %s bytes\n' "$ROOTFS_BYTES"
 mksquashfs "$ROOTFS" "$ISO_ROOT/BOLT/system.squashfs" -comp zstd -Xcompression-level 15 -b 1M -noappend -processors "$(getconf _NPROCESSORS_ONLN)" -no-progress
 
 log 'Staging the independent Limine boot tree.'
