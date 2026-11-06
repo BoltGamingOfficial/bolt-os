@@ -43,7 +43,7 @@ sha256sum -c ../checksums/BOLT-OS-0.2.0-dev-x86_64.iso.sha256
 
 ## Boot architecture
 
-The ISO uses Limine 12, with the Limine BIOS and EFI CD images plus the x86_64 EFI loader. The kernel, microcode, and custom initramfs live under `/BOLT/boot/`; the root filesystem is `/BOLT/system.squashfs`; the filesystem label is `BOLT_LIVE`. The custom initramfs hook locates that label, mounts the ISO and squashfs, creates an overlay upper layer with a 50%-of-detected-RAM tmpfs size cap, moves the API filesystems, and switches to systemd in the overlay root.
+The ISO uses Limine 12, with a UEFI El Torito boot entry and a legacy-BIOS hybrid MBR boot path. The EFI CD boot image is used directly; the optional appended EFI System Partition stage is omitted because xorriso 1.5.8 failed to create that appended partition in the CI build. UEFI boot from optical media/VM is the target of the automated OVMF test; UEFI boot after writing the ISO to a USB stick is not yet claimed or tested. The kernel, microcode, and custom initramfs live under `/BOLT/boot/`; the root filesystem is `/BOLT/system.squashfs`; the filesystem label is `BOLT_LIVE`. The custom initramfs hook locates that label, mounts the ISO and squashfs, creates an overlay upper layer with a 50%-of-detected-RAM tmpfs size cap, moves the API filesystems, and switches to systemd in the overlay root.
 
 The live initramfs and ISO boot entries are BOLT-defined. Arch packages remain the software source; this is not a new independent kernel or package ecosystem.
 

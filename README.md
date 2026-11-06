@@ -2,7 +2,7 @@
 
 **Development live-image source for a minimal KDE gaming desktop.** This branch is an experimental build recipe, not a stable release or an installer.
 
-BOLT uses official Arch package repositories as its binary package source, but owns its live-image layout: Limine boot configuration, the `/BOLT/boot/` directory, the `/BOLT/system.squashfs` image, the `BOLT_LIVE` medium label, and a custom mkinitcpio hook. It does not copy the standard Arch live-image profile or use the Arch ISO build framework.
+BOLT uses official Arch package repositories as its binary package source, but owns its live-image layout: Limine boot configuration, the `/BOLT/boot/` directory, the `/BOLT/system.squashfs` image, the `BOLT_LIVE` medium label, and a custom mkinitcpio hook. The build uses UEFI El Torito boot plus legacy-BIOS hybrid MBR; UEFI boot from USB-written media is not yet claimed or verified. It does not copy the standard Arch live-image profile or use the Arch ISO build framework.
 
 ## What is included
 

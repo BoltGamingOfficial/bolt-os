@@ -160,16 +160,21 @@ if [[ -d "$ROOTFS/usr/share/locale" ]]; then
 fi
 rm -f "$ROOTFS/var/log/pacman.log" "$ROOTFS/var/log/lastlog"
 
-log 'Measuring and creating the compressed system image.'
-ROOTFS_BYTES="$(du -s --bytes "$ROOTFS" | awk '{print $1}')"
-printf 'BOLT root filesystem (uncompressed): %s bytes\n' "$ROOTFS_BYTES"
-mksquashfs "$ROOTFS" "$ISO_ROOT/BOLT/system.squashfs" -comp zstd -Xcompression-level 15 -b 1M -noappend -processors "$(getconf _NPROCESSORS_ONLN)" -no-progress
-
-log 'Staging the independent Limine boot tree.'
+log 'Staging the kernel, microcode, and custom initramfs outside the compressed root.'
 install -m 0644 "$ROOTFS/boot/vmlinuz-linux" "$ISO_ROOT/BOLT/boot/vmlinuz"
 install -m 0644 "$ROOTFS/boot/intel-ucode.img" "$ISO_ROOT/BOLT/boot/intel-ucode.img"
 install -m 0644 "$ROOTFS/boot/amd-ucode.img" "$ISO_ROOT/BOLT/boot/amd-ucode.img"
 install -m 0644 "$ROOTFS/boot/initramfs-bolt.img" "$ISO_ROOT/BOLT/boot/initramfs-bolt.img"
+# Kernel and initramfs are loaded directly by Limine from /BOLT/boot. Do not
+# duplicate them inside the compressed root image.
+rm -f -- "$ROOTFS/boot/"*
+
+log 'Measuring and creating the compressed system image.'
+ROOTFS_BYTES="$(du -s --bytes "$ROOTFS" | awk '{print $1}')"
+printf 'BOLT root filesystem (uncompressed): %s bytes\\n' "$ROOTFS_BYTES"
+mksquashfs "$ROOTFS" "$ISO_ROOT/BOLT/system.squashfs" -comp zstd -Xcompression-level 15 -b 1M -noappend -processors "$(getconf _NPROCESSORS_ONLN)" -no-progress
+
+log 'Staging the independent Limine boot tree.'
 install -m 0644 "$ROOT_DIR/limine.conf" "$ISO_ROOT/boot/limine/limine.conf"
 install -m 0644 "$ROOT_DIR/branding/bolt-boot.png" "$ISO_ROOT/BOLT/bolt-boot.png"
 for boot_file in limine-bios-cd.bin limine-uefi-cd.bin limine-bios.sys BOOTX64.EFI; do
@@ -184,7 +189,7 @@ cat > "$ISO_ROOT/BOLT/build-info.txt" <<INFO
 Distribution: BOLT OS
 Version: $BOLT_VERSION
 Architecture: x86_64
-Boot manager: Limine (UEFI + legacy BIOS hybrid ISO)
+Boot manager: Limine (UEFI El Torito + legacy BIOS hybrid ISO)
 Kernel: $KERNEL_VERSION
 Package source: official Arch repositories (core/extra/multilib)
 Boot layout: /BOLT/boot plus /BOLT/system.squashfs
@@ -195,7 +200,7 @@ log 'Creating the UEFI/BIOS hybrid ISO with the BOLT_LIVE volume label.'
 xorriso -as mkisofs -R -r -J -V BOLT_LIVE \
   -b boot/limine/limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table \
   -hfsplus -apm-block-size 2048 \
-  --efi-boot boot/limine/limine-uefi-cd.bin -efi-boot-part -efi-boot-image \
+  --efi-boot boot/limine/limine-uefi-cd.bin \
   --protective-msdos-label "$ISO_ROOT" -o "$ISO_PATH"
 limine bios-install "$ISO_PATH"
 
