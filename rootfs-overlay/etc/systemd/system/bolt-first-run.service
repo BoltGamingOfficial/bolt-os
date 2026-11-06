@@ -1,0 +1,19 @@
+[Unit]
+Description=BOLT OS first-run account and locale setup
+After=local-fs.target
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/bolt-first-run
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty-force
+StandardOutput=tty
+StandardError=tty
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

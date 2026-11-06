@@ -1,4 +1,0 @@
-[Basic Settings]
-# Avoid a surprise first-login file-indexing workload in the live prototype.
-# Users can enable indexing from KDE settings if they want it.
-Indexing-Enabled=false

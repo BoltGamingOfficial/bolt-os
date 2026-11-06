@@ -1,29 +1,27 @@
-name: Build and publish BOLT OS ISO
+name: BOLT ISO build
 
 on:
-  # Build a new experimental prerelease whenever the OS build inputs change.
   push:
-    branches: [main]
+    branches: ["delivery/**"]
     paths:
-      - '.github/workflows/build-iso.yml'
       - 'build.sh'
       - 'packages.x86_64'
-      - 'airootfs/**'
+      - 'limine.conf'
+      - 'mkinitcpio/**'
+      - 'rootfs-overlay/**'
       - 'branding/**'
-      - 'README.md'
-      - 'Branding.md'
-      - 'BUILDING.md'
-      - 'docs/**'
+      - 'tests/**'
+      - '.github/workflows/build-iso.yml'
   workflow_dispatch:
     inputs:
       version:
-        description: Release version label (new tags create separate prereleases)
+        description: Version string for this development build
         required: true
-        default: 0.1.0-dev
+        default: 0.2.0-dev
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -32,109 +30,37 @@ jobs:
       image: archlinux:latest
       options: --privileged
     steps:
-      - name: Install build tools in the Arch container
-        run: |
-          pacman -Syu --noconfirm --needed archiso git shellcheck
-          # The ISO build needs room for both the staged filesystem and final
-          # ISO. Remove downloaded package archives after installing tools.
-          pacman -Scc --noconfirm
-          echo "Disk space after installing build tools and cleaning package cache:"
-          df -h /
-          df -h "$GITHUB_WORKSPACE" || true
-          df -i /
-
+      - name: Install build tools
+        run: pacman -Syu --noconfirm --needed arch-install-scripts mkinitcpio squashfs-tools xorriso limine shellcheck git qemu-system-x86 edk2-ovmf
       - name: Check out source
         uses: actions/checkout@v4
-
-      - name: Validate shell scripts
+      - name: Source, unit, and lint checks
         run: |
-          bash -n build.sh
-          bash -n airootfs/usr/local/libexec/bolt-create-live-user
-          bash -n airootfs/usr/local/libexec/bolt-set-wallpaper-once
-          shellcheck build.sh airootfs/usr/local/libexec/bolt-create-live-user airootfs/usr/local/libexec/bolt-set-wallpaper-once
-
-      - name: Reclaim unused hosted tool cache space
-        run: |
-          # This is an ephemeral GitHub-hosted runner. The Arch container
-          # sees the runner's hosted tool cache at /__t; the build does not
-          # use those preinstalled language/tool runtimes.
-          if [[ -d /__t ]]; then
-            echo "Hosted tool cache before cleanup:"
-            du -sh /__t 2>/dev/null || true
-            find /__t -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-          fi
-          echo "Disk space after runner-cache cleanup:"
-          df -h /
-          df -h "$GITHUB_WORKSPACE" || true
-
-      - name: Build live ISO
+          bash tests/check-source.sh
+          bash tests/test-first-run.sh
+          bash tests/test-bolt-preset.sh
+          shellcheck build.sh tests/*.sh \
+            rootfs-overlay/usr/local/bin/bolt-preset \
+            rootfs-overlay/usr/local/libexec/bolt-first-run \
+            rootfs-overlay/usr/local/libexec/bolt-set-wallpaper-once \
+            mkinitcpio/install/bolt_live mkinitcpio/hooks/bolt_live
+      - name: Build BOLT ISO
         env:
-          BOLT_VERSION: ${{ inputs.version || '0.1.0-dev' }}
-        run: |
-          echo "Disk space immediately before ISO build:"
-          df -h /
-          df -h "$GITHUB_WORKSPACE" || true
-          bash ./build.sh
-
-      # Workflow artifacts are a convenience only. If the repository's
-      # Actions storage quota is exhausted, continue so the release assets
-      # can still be published.
-      - name: Upload ISO and checksums as a best-effort workflow artifact
+          BOLT_VERSION: ${{ inputs.version || '0.2.0-dev' }}
+          DELIVERY_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY
+          WORK_DIR: /var/tmp/bolt-os-build
+        run: ./build.sh
+      - name: Probe UEFI boot in QEMU/OVMF
+        env:
+          QEMU_BOOT_TIMEOUT: 150
+          BOLT_VERSION: ${{ inputs.version || '0.2.0-dev' }}
+          DELIVERY_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY
+          QEMU_REPORT_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY/testing
+        run: bash tests/qemu-uefi-smoke.sh "$DELIVERY_DIR/iso/BOLT-OS-${BOLT_VERSION}-x86_64.iso"
+      - name: Upload ISO, checksum, log, and test evidence
         uses: actions/upload-artifact@v4
-        continue-on-error: true
         with:
-          name: bolt-os-${{ inputs.version || '0.1.0-dev' }}-x86_64
-          path: |
-            out/*.iso
-            out/SHA256SUMS
+          name: BOLT-OS-${{ inputs.version || '0.2.0-dev' }}-x86_64
+          path: BOLT-OS-DELIVERY/
           if-no-files-found: error
-          retention-days: 7
-
-      - name: Prepare release assets under GitHub's per-file size limit
-        run: |
-          set -euo pipefail
-          mkdir -p out/release-assets
-          iso="$(find out -maxdepth 1 -type f -name '*.iso' -print -quit)"
-          if [[ -z "$iso" ]]; then
-            echo "No ISO found in out/" >&2
-            exit 1
-          fi
-
-          # GitHub Releases rejects individual assets >= 2 GiB. Keep the
-          # original ISO intact in the workflow artifact, but split the
-          # release-download copy into safely smaller chunks.
-          iso_name="$(basename "$iso")"
-          split -b 1900M -d -a 2 "$iso" "out/release-assets/${iso_name}.part-"
-          cp out/SHA256SUMS out/release-assets/SHA256SUMS
-          cat > out/release-assets/README-DOWNLOAD.txt <<EOF
-          BOLT OS ISO download
-          ====================
-
-          Download every ${iso_name}.part-* file into the same directory.
-          Reassemble the ISO by running:
-
-            cat ${iso_name}.part-* > ${iso_name}
-
-          Then verify the reconstructed ISO with:
-
-            sha256sum -c SHA256SUMS
-
-          A full, unsplit ISO may also be available as a GitHub Actions
-          workflow artifact when the repository's Actions storage quota allows it.
-          EOF
-          echo "Release assets and sizes:"
-          ls -lh out/release-assets/
-
-      - name: Publish ISO in GitHub Releases
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ inputs.version || '0.1.0-dev' }}
-          name: BOLT OS ${{ inputs.version || '0.1.0-dev' }}
-          target_commitish: main
-          prerelease: true
-          draft: false
-          generate_release_notes: true
-          files: |
-            out/release-assets/*
-          fail_on_unmatched_files: true
-          overwrite_files: true
+          retention-days: 14

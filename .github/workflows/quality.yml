@@ -1,7 +1,8 @@
-name: Repository quality checks
+name: BOLT source quality
 
 on:
   push:
+    branches: ["delivery/**"]
   pull_request:
   workflow_dispatch:
 
@@ -9,20 +10,24 @@ permissions:
   contents: read
 
 jobs:
-  static-checks:
+  static:
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
     steps:
-      - name: Check out repository
+      - name: Install validation tools
+        run: pacman -Syu --noconfirm --needed bash shellcheck openssl xkeyboard-config tzdata git
+      - name: Check out source
         uses: actions/checkout@v4
-      - name: Set up Bash and ShellCheck
+      - name: Syntax and source policy tests
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes shellcheck
-      - name: Check shell syntax
-        run: bash -n build.sh tests/check-profile.sh tests/vm-smoke-test.sh tests/test-bolt-preset.sh airootfs/usr/local/bin/bolt-preset
-      - name: Run ShellCheck
-        run: shellcheck build.sh tests/check-profile.sh tests/vm-smoke-test.sh tests/test-bolt-preset.sh airootfs/usr/local/bin/bolt-preset
-      - name: Validate package manifest and build policy
-        run: |
-          bash tests/check-profile.sh
+          bash tests/check-source.sh
+          bash tests/test-first-run.sh
           bash tests/test-bolt-preset.sh
+      - name: ShellCheck
+        run: |
+          shellcheck build.sh tests/*.sh \
+            rootfs-overlay/usr/local/bin/bolt-preset \
+            rootfs-overlay/usr/local/libexec/bolt-first-run \
+            rootfs-overlay/usr/local/libexec/bolt-set-wallpaper-once \
+            mkinitcpio/install/bolt_live mkinitcpio/hooks/bolt_live

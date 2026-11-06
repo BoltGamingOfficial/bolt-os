@@ -1,22 +1,6 @@
-# Build artifacts
-out/
-work/
+/BOLT-OS-DELIVERY/
+/work/
+/out/
 *.iso
-*.iso.sig
-*.img
-*.qcow2
-
-# Local environment and secrets
-.env
-.env.*
-!.env.example
-*.key
-*.pem
-secrets/
-private-config/
-
-# Editor and OS files
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+*.sha256
+*.log
