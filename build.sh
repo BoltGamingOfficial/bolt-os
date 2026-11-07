@@ -70,7 +70,7 @@ PACMAN
 pacman --config "$PACMAN_CONF" -Sy --noconfirm
 
 mapfile -t PACKAGES < <(grep -Ev '^[[:space:]]*(#|$)' "$ROOT_DIR/packages.x86_64")
-((${#PACKAGES[@]} > 0)) || fail 'package manifest is empty'
+(("${#PACKAGES[@]}" > 0)) || fail 'package manifest is empty'
 for package in "${PACKAGES[@]}"; do
   [[ "$package" =~ ^[a-zA-Z0-9@._+-]+$ ]] || fail "invalid package name in manifest: $package"
   pacman --config "$PACMAN_CONF" -Si "$package" >/dev/null || fail "package is not available from enabled official repositories: $package"
@@ -78,7 +78,7 @@ done
 log "Validated ${#PACKAGES[@]} package names against the enabled official repositories."
 
 rm -rf -- "$ROOTFS" "$ISO_ROOT"
-mkdir -p "$ROOTFS" "$ISO_ROOT/BOLT/boot" "$ISO_ROOT/boot/limine"
+mkdir -p "$ROOTFS" "$ISO_ROOT/BOLT/boot" "$ISO_ROOT/boot/limine" "$ISO_ROOT/EFI/BOOT"
 
 log 'Installing the minimal system to the isolated root filesystem.'
 pacstrap -K -C "$PACMAN_CONF" "$ROOTFS" "${PACKAGES[@]}"
@@ -174,33 +174,40 @@ ROOTFS_BYTES="$(du -s --bytes "$ROOTFS" | awk '{print $1}')"
 printf 'BOLT root filesystem (uncompressed): %s bytes\n' "$ROOTFS_BYTES"
 mksquashfs "$ROOTFS" "$ISO_ROOT/BOLT/system.squashfs" -comp zstd -Xcompression-level 15 -b 1M -noappend -processors "$(getconf _NPROCESSORS_ONLN)" -no-progress
 
-log 'Staging the independent Limine boot tree.'
+log 'Staging the independent Limine UEFI boot tree.'
 install -m 0644 "$ROOT_DIR/limine.conf" "$ISO_ROOT/boot/limine/limine.conf"
 install -m 0644 "$ROOT_DIR/branding/bolt-boot.png" "$ISO_ROOT/BOLT/bolt-boot.png"
 [[ -s /usr/share/limine/limine-uefi-cd.bin ]] || fail 'Limine EFI CD boot image is missing: /usr/share/limine/limine-uefi-cd.bin'
+[[ -s /usr/share/limine/BOOTX64.EFI ]] || fail 'Limine x86_64 EFI application is missing: /usr/share/limine/BOOTX64.EFI'
 install -m 0644 /usr/share/limine/limine-uefi-cd.bin "$ISO_ROOT/boot/limine/limine-uefi-cd.bin"
+install -m 0644 /usr/share/limine/BOOTX64.EFI "$ISO_ROOT/EFI/BOOT/BOOTX64.EFI"
 
 cat > "$ISO_ROOT/BOLT/build-info.txt" <<INFO
 Distribution: BOLT OS
 Version: $BOLT_VERSION
 Architecture: x86_64
-Boot manager: Limine (UEFI El Torito optical ISO)
+Boot manager: Limine (UEFI El Torito plus GPT EFI system partition)
 Kernel: $KERNEL_VERSION
 Package source: official Arch repositories (core/extra/multilib)
 Boot layout: /BOLT/boot plus /BOLT/system.squashfs
 Writable live overlay: tmpfs capped at 50% of detected physical RAM; not disk storage
 INFO
 
-log 'Creating a UEFI El Torito ISO with the BOLT_LIVE volume label.'
+log 'Creating the UEFI hybrid ISO with a GPT EFI system partition and the BOLT_LIVE label.'
 xorriso -as mkisofs -R -r -J -V BOLT_LIVE \
-  --efi-boot boot/limine/limine-uefi-cd.bin -no-emul-boot \
+  --efi-boot boot/limine/limine-uefi-cd.bin \
+  -efi-boot-part --efi-boot-image --protective-msdos-label \
   "$ISO_ROOT" -o "$ISO_PATH"
 
-log 'Verifying ISO structure, boot catalog, and checksum.'
+log 'Verifying ISO structure, UEFI boot catalog, and checksum.'
 xorriso -indev "$ISO_PATH" -report_el_torito plain > "$DELIVERY_DIR/testing/el-torito-report.txt" 2>&1
-xorriso -indev "$ISO_PATH" -find / -name system.squashfs -print > "$DELIVERY_DIR/testing/iso-files.txt" 2>&1
+xorriso -indev "$ISO_PATH" -find / -name system.squashfs > "$DELIVERY_DIR/testing/iso-files.txt" 2>&1
 grep -q '/BOLT/system.squashfs' "$DELIVERY_DIR/testing/iso-files.txt" || fail 'system squashfs is not present in the ISO'
 grep -Eiq '0xef|EFI' "$DELIVERY_DIR/testing/el-torito-report.txt" || fail 'ISO does not report an EFI boot catalog entry'
+grep -Fq '/EFI/BOOT/BOOTX64.EFI' "$DELIVERY_DIR/testing/iso-files.txt" || {
+  xorriso -indev "$ISO_PATH" -find /EFI/BOOT -name BOOTX64.EFI > "$DELIVERY_DIR/testing/efi-files.txt" 2>&1
+  grep -q 'BOOTX64.EFI' "$DELIVERY_DIR/testing/efi-files.txt" || fail 'fallback EFI application is not present in the ISO'
+}
 (cd "$DELIVERY_DIR/iso" && sha256sum "$ISO_NAME") > "$DELIVERY_DIR/checksums/$ISO_NAME.sha256"
 (cd "$DELIVERY_DIR/iso" && sha256sum -c "../checksums/$ISO_NAME.sha256")
 
@@ -208,7 +215,7 @@ ISO_BYTES="$(stat -c '%s' "$ISO_PATH")"
 SQUASHFS_BYTES="$(stat -c '%s' "$ISO_ROOT/BOLT/system.squashfs")"
 cat > "$DELIVERY_DIR/testing/build-measurements.txt" <<MEASURE
 Build version: $BOLT_VERSION
-Architecture: x86_64
+Architecture: x86_64 UEFI
 Kernel version: $KERNEL_VERSION
 Uncompressed live rootfs bytes: $ROOTFS_BYTES
 Compressed squashfs bytes: $SQUASHFS_BYTES

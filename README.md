@@ -1,8 +1,8 @@
 # BOLT OS
 
-**Development live-image source for a minimal KDE gaming desktop.** This branch is an experimental build recipe, not a stable release or an installer.
+**Development live-image source for a minimal KDE gaming desktop.** This repository is an experimental build recipe, not a stable release or an installer.
 
-BOLT uses official Arch package repositories as its binary package source, but owns its live-image layout: Limine boot configuration, the `/BOLT/boot/` directory, the `/BOLT/system.squashfs` image, the `BOLT_LIVE` medium label, and a custom mkinitcpio hook. The image uses UEFI El Torito boot for optical media/VMs. It is not a BIOS image or a hybrid USB image; booting after writing it to a USB stick is not supported or claimed. It does not copy the standard Arch live-image profile or use the Arch ISO build framework.
+BOLT uses official Arch package repositories as its binary package source, but owns its live-image layout: Limine boot configuration, the `/BOLT/boot/` directory, the `/BOLT/system.squashfs` image, the `BOLT_LIVE` medium label, and a custom mkinitcpio hook. The ISO uses a UEFI El Torito boot entry and a GPT EFI system partition for hybrid optical-media and raw USB boot. It does not copy the standard Arch live-image profile or use the Arch ISO build framework.
 
 ## What is included
 
@@ -32,7 +32,7 @@ Target: x86_64 UEFI PCs with Intel or AMD CPUs. Intel and AMD Vulkan support use
 
 ## Build and validation
 
-See [BUILDING.md](BUILDING.md) for a clean Arch Linux host procedure. The build validates package names against the enabled official repositories before installing them, runs source/unit/lint checks, creates a zstd-compressed root image, builds a UEFI El Torito Limine ISO for optical/VM boot, and writes SHA-256 checksums and logs.
+See [BUILDING.md](BUILDING.md) for a clean Arch Linux host procedure. The build validates package names against the enabled official repositories before installing them, runs source/unit/lint checks, creates a zstd-compressed root image, builds a UEFI hybrid Limine ISO, and writes SHA-256 checksums and logs. GitHub Actions on `main` runs source checks, builds the ISO, and performs a QEMU/OVMF UEFI boot probe.
 
 **No installer is shipped.** The repository does not yet contain a safe disk installer, partitioning workflow, explicit disk-wipe confirmation, or tested installed-system bootloader setup. The live ISO must not be presented as an installable system and will not format any disk.
 

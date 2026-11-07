@@ -39,6 +39,12 @@ grep -Fq 'first-run-complete' "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-f
 grep -Fq 'interface_branding: BOLT OS' "$ROOT_DIR/limine.conf" || fail 'Limine branding missing'
 grep -Fq 'wallpaper: boot():/BOLT/bolt-boot.png' "$ROOT_DIR/limine.conf" || fail 'Limine wallpaper path missing'
 grep -Fq 'bolt-boot.png' "$ROOT_DIR/build.sh" || fail 'Limine wallpaper is not staged into the ISO'
+grep -Fq 'BOOTX64.EFI' "$ROOT_DIR/build.sh" || fail 'UEFI fallback loader is not staged into the ISO'
+grep -Fq -- '-efi-boot-part --efi-boot-image --protective-msdos-label' "$ROOT_DIR/build.sh" || fail 'UEFI hybrid GPT partition is missing'
+grep -Fq 'xorriso -indev "$ISO_PATH" -find / -name system.squashfs' "$ROOT_DIR/build.sh" || fail 'ISO verification must use xorriso find with its default echo action'
+if grep -Fq -- '-name system.squashfs -print' "$ROOT_DIR/build.sh"; then
+  fail 'xorriso -find must not use GNU find -print syntax'
+fi
 grep -Fq 'BOLT_LIVE' "$ROOT_DIR/mkinitcpio/hooks/bolt_live" || fail 'custom boot medium label missing'
 grep -Fq 'MemTotal:' "$ROOT_DIR/mkinitcpio/hooks/bolt_live" || fail 'memory-aware overlay sizing missing'
 grep -Fq 'newroot=/newroot' "$ROOT_DIR/mkinitcpio/hooks/bolt_live" || fail 'new root must not be nested inside /run before moving /run'
@@ -49,4 +55,4 @@ if grep -RniE 'archiso|mkarchiso|install_dir="arch"|AI Hub|OpenCode' \
   fail 'legacy image framework or AI feature references remain in delivery source'
 fi
 
-printf 'PASS: source structure, Bash syntax, package manifest, branding, first-run gate, and privilege policy\n'
+printf 'PASS: source structure, Bash syntax, package manifest, BOLT branding, UEFI hybrid boot, first-run gate, and privilege policy\n'

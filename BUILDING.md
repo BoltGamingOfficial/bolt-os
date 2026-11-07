@@ -10,15 +10,15 @@ Install the tools:
 sudo pacman -Syu --needed arch-install-scripts mkinitcpio squashfs-tools xorriso limine shellcheck git
 ```
 
-Clone and build:
+Clone and build from `main`:
 
 ```sh
 git clone https://github.com/BoltGamingOfficial/bolt-os.git
 cd bolt-os
-git switch delivery/bolt-clean-build
-sudo env BOLT_VERSION=0.2.0-dev \\
-  DELIVERY_DIR="$PWD/BOLT-OS-DELIVERY" \\
-  WORK_DIR="/var/tmp/bolt-os-build" \\
+git switch main
+sudo env BOLT_VERSION=0.2.0-dev \
+  DELIVERY_DIR="$PWD/BOLT-OS-DELIVERY" \
+  WORK_DIR="/var/tmp/bolt-os-build" \
   ./build.sh
 ```
 
@@ -43,7 +43,7 @@ sha256sum -c ../checksums/BOLT-OS-0.2.0-dev-x86_64.iso.sha256
 
 ## Boot architecture
 
-The ISO uses Limine 12 with a UEFI El Torito boot entry. It is intended to boot as optical media or a VM virtual CD/DVD. It is not a BIOS image and is not a hybrid USB image; UEFI boot after writing it to a USB stick is not supported or claimed. The optional appended EFI System Partition and BIOS hybrid stages were removed after xorriso/Limine rejected the generated hybrid partition geometry in CI. The kernel, microcode, and custom initramfs live under `/BOLT/boot/`; the root filesystem is `/BOLT/system.squashfs`; the filesystem label is `BOLT_LIVE`. The custom initramfs hook locates that label, mounts the ISO and squashfs, creates an overlay upper layer with a 50%-of-detected-RAM tmpfs size cap, moves the API filesystems, and switches to systemd in the overlay root.
+The ISO uses Limine 12 with a UEFI El Torito boot entry, a GPT EFI system partition derived from the EFI boot image, and the standard `/EFI/BOOT/BOOTX64.EFI` fallback path. It is designed for UEFI x86_64 optical-media/VM boot and raw USB writing; legacy BIOS boot is not included. The kernel, microcode, and custom initramfs live under `/BOLT/boot/`; the root filesystem is `/BOLT/system.squashfs`; the filesystem label is `BOLT_LIVE`. The custom initramfs hook locates that label, mounts the ISO and squashfs, creates an overlay upper layer with a 50%-of-detected-RAM tmpfs size cap, moves the API filesystems, and switches to systemd in the overlay root.
 
 The live initramfs and ISO boot entries are BOLT-defined. Arch packages remain the software source; this is not a new independent kernel or package ecosystem.
 
@@ -59,7 +59,7 @@ The live initramfs and ISO boot entries are BOLT-defined. Arch packages remain t
 A boot test requires QEMU with OVMF firmware on a host with virtualization enabled. After building, run the included UEFI probe (it locates OVMF firmware and falls back to TCG when KVM is unavailable):
 
 ```sh
-QEMU_REPORT_DIR="$PWD/BOLT-OS-DELIVERY/testing" \\
+QEMU_REPORT_DIR="$PWD/BOLT-OS-DELIVERY/testing" \
   bash tests/qemu-uefi-smoke.sh "$PWD/BOLT-OS-DELIVERY/iso/BOLT-OS-0.2.0-dev-x86_64.iso"
 ```
 
