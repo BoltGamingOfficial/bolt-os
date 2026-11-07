@@ -41,6 +41,7 @@ grep -Fq 'wallpaper: boot():/BOLT/bolt-boot.png' "$ROOT_DIR/limine.conf" || fail
 grep -Fq 'bolt-boot.png' "$ROOT_DIR/build.sh" || fail 'Limine wallpaper is not staged into the ISO'
 grep -Fq 'BOOTX64.EFI' "$ROOT_DIR/build.sh" || fail 'UEFI fallback loader is not staged into the ISO'
 grep -Fq -- '-efi-boot-part --efi-boot-image --protective-msdos-label' "$ROOT_DIR/build.sh" || fail 'UEFI hybrid GPT partition is missing'
+# shellcheck disable=SC2016 # Match the literal command as it appears in build.sh.
 grep -Fq 'xorriso -indev "$ISO_PATH" -find / -name system.squashfs' "$ROOT_DIR/build.sh" || fail 'ISO verification must use xorriso find with its default echo action'
 if grep -Fq -- '-name system.squashfs -print' "$ROOT_DIR/build.sh"; then
   fail 'xorriso -find must not use GNU find -print syntax'
