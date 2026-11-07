@@ -8,6 +8,7 @@ run_hook() {
   writable=/run/bolt/writable
   newroot=/newroot
 
+  echo 'BOLT: starting live root discovery.'
   mkdir -p "$medium" "$lower" "$writable" "$newroot"
   while [ "$attempt" -le 30 ]; do
     device="$(blkid -L BOLT_LIVE 2>/dev/null)"
@@ -19,6 +20,7 @@ run_hook() {
     echo 'BOLT: cannot find boot medium labelled BOLT_LIVE.'
     return 1
   fi
+  echo "BOLT: found live medium at $device."
 
   if ! mount -t iso9660 -o ro "$device" "$medium"; then
     echo 'BOLT: cannot mount the BOLT_LIVE ISO9660 medium.'
@@ -28,10 +30,12 @@ run_hook() {
     echo 'BOLT: /BOLT/system.squashfs is missing from the boot medium.'
     return 1
   fi
+  echo 'BOLT: ISO mounted; mounting compressed system image.'
   if ! mount -t squashfs -o loop,ro "$medium/BOLT/system.squashfs" "$lower"; then
     echo 'BOLT: failed to mount the compressed system image.'
     return 1
   fi
+  echo 'BOLT: compressed system image mounted.'
 
   mem_total_kib="$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)"
   if [ -z "$mem_total_kib" ] || [ "$mem_total_kib" -lt 262144 ]; then
@@ -55,5 +59,6 @@ run_hook() {
   mount -o move /sys "$newroot/sys"
   mount -o move /run "$newroot/run"
   echo "BOLT: live overlay upper limit is ${overlay_kib} KiB (50% of detected RAM; tmpfs, not disk)."
+  echo 'BOLT: switching to the live system.'
   exec env -i "TERM=${TERM:-linux}" /usr/bin/switch_root "$newroot" /usr/lib/systemd/systemd
 }

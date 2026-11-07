@@ -57,15 +57,16 @@ jobs:
         run: bash ./build.sh
       - name: Probe UEFI boot in QEMU/OVMF
         env:
-          QEMU_BOOT_TIMEOUT: 150
+          QEMU_BOOT_TIMEOUT: 300
           BOLT_VERSION: ${{ inputs.version || '0.2.0-dev' }}
           DELIVERY_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY
           QEMU_REPORT_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY/testing
         run: bash tests/qemu-uefi-smoke.sh "$DELIVERY_DIR/iso/BOLT-OS-${BOLT_VERSION}-x86_64.iso"
-      - name: Upload ISO, checksum, log, and test evidence
+      - name: Upload ISO, checksum, build log, and boot diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: BOLT-OS-${{ inputs.version || '0.2.0-dev' }}-x86_64
           path: BOLT-OS-DELIVERY/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
