@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=BOLT OS Wallpaper Setup
-Comment=Apply the BOLT OS live-session wallpaper once
-Exec=/usr/bin/bash /usr/local/libexec/bolt-set-wallpaper-once
-OnlyShowIn=KDE;
-X-KDE-autostart-phase=1

@@ -1,0 +1,30 @@
+#!/usr/bin/bash
+
+build() {
+  add_runscript
+  add_module ahci
+  add_module nvme
+  add_module xhci_pci
+  add_module xhci_hcd
+  add_module usb_storage
+  add_module uas
+  add_module sd_mod
+  add_module sr_mod
+  add_module isofs
+  add_module squashfs
+  add_module loop
+  add_module overlay
+  add_binary /usr/bin/blkid
+  add_binary /usr/bin/mount
+  add_binary /usr/bin/sleep
+  add_binary /usr/bin/awk
+  add_binary /usr/bin/env
+  add_binary /usr/bin/switch_root
+}
+
+help() {
+  cat <<'HELP'
+Mounts the BOLT-labeled ISO9660 medium, its compressed system image, and a
+memory-proportional writable overlay before switching to the BOLT system.
+HELP
+}

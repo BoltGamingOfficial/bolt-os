@@ -1,0 +1,59 @@
+# shellcheck shell=bash
+run_hook() {
+  local device attempt mem_total_kib overlay_kib medium lower writable newroot
+  attempt=1
+  device=""
+  medium=/run/bolt/medium
+  lower=/run/bolt/lower
+  writable=/run/bolt/writable
+  newroot=/newroot
+
+  mkdir -p "$medium" "$lower" "$writable" "$newroot"
+  while [ "$attempt" -le 30 ]; do
+    device="$(blkid -L BOLT_LIVE 2>/dev/null)"
+    [ -n "$device" ] && break
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+  if [ -z "$device" ]; then
+    echo 'BOLT: cannot find boot medium labelled BOLT_LIVE.'
+    return 1
+  fi
+
+  if ! mount -t iso9660 -o ro "$device" "$medium"; then
+    echo 'BOLT: cannot mount the BOLT_LIVE ISO9660 medium.'
+    return 1
+  fi
+  if [ ! -s "$medium/BOLT/system.squashfs" ]; then
+    echo 'BOLT: /BOLT/system.squashfs is missing from the boot medium.'
+    return 1
+  fi
+  if ! mount -t squashfs -o loop,ro "$medium/BOLT/system.squashfs" "$lower"; then
+    echo 'BOLT: failed to mount the compressed system image.'
+    return 1
+  fi
+
+  mem_total_kib="$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)"
+  if [ -z "$mem_total_kib" ] || [ "$mem_total_kib" -lt 262144 ]; then
+    echo 'BOLT: unable to determine sufficient system memory for the live overlay.'
+    return 1
+  fi
+  overlay_kib=$((mem_total_kib / 2))
+  if ! mount -t tmpfs -o "mode=0755,size=${overlay_kib}k" tmpfs "$writable"; then
+    echo 'BOLT: failed to mount the RAM-backed writable overlay.'
+    return 1
+  fi
+  mkdir -p "$writable/upper" "$writable/work" "$newroot"
+  if ! mount -t overlay overlay -o "lowerdir=$lower,upperdir=$writable/upper,workdir=$writable/work" "$newroot"; then
+    echo 'BOLT: failed to mount the writable system overlay.'
+    return 1
+  fi
+
+  mkdir -p "$newroot/dev" "$newroot/proc" "$newroot/sys" "$newroot/run"
+  mount -o move /dev "$newroot/dev"
+  mount -o move /proc "$newroot/proc"
+  mount -o move /sys "$newroot/sys"
+  mount -o move /run "$newroot/run"
+  echo "BOLT: live overlay upper limit is ${overlay_kib} KiB (50% of detected RAM; tmpfs, not disk)."
+  exec env -i "TERM=${TERM:-linux}" /usr/bin/switch_root "$newroot" /usr/lib/systemd/systemd
+}

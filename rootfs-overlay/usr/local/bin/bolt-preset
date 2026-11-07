@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# BOLT power profiles are applied on demand; this tool starts no background service.
+set -Eeuo pipefail
+umask 077
+
+usage() {
+  cat <<'HELP'
+Usage: bolt-preset {status|balanced|gaming|performance|battery|reset}
+
+Select a reversible power-profile preference. Gaming uses the balanced power
+profile because GameMode independently requests temporary game-time policy.
+The selected preference is stored in ~/.config/bolt-os/preset.conf.
+HELP
+}
+
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/bolt-os"
+config_file="$config_dir/preset.conf"
+
+current_preset() {
+  local saved=""
+  if [[ -r "$config_file" ]]; then
+    IFS= read -r saved < "$config_file" || true
+    case "$saved" in balanced|gaming|performance|battery) printf '%s\n' "$saved"; return ;; esac
+  fi
+  printf 'balanced\n'
+}
+
+apply_power_profile() {
+  local preset="$1" profile
+  if ! command -v powerprofilesctl >/dev/null 2>&1; then
+    printf 'Saved preference; power-profile control is unavailable on this system.\n' >&2
+    return 0
+  fi
+  case "$preset" in
+    balanced|gaming) profile=balanced ;;
+    performance) profile=performance ;;
+    battery) profile=power-saver ;;
+    *) return 2 ;;
+  esac
+  powerprofilesctl set "$profile"
+}
+
+case "${1:-}" in
+  status)
+    printf 'Saved BOLT preset: %s\n' "$(current_preset)"
+    if command -v powerprofilesctl >/dev/null 2>&1; then
+      printf 'Current power profile: '
+      powerprofilesctl get || true
+    fi
+    ;;
+  balanced|gaming|performance|battery)
+    mkdir -p "$config_dir"
+    printf '%s\n' "$1" > "$config_file"
+    chmod 0600 "$config_file"
+    apply_power_profile "$1"
+    ;;
+  reset)
+    rm -f -- "$config_file"
+    apply_power_profile balanced
+    ;;
+  -h|--help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac

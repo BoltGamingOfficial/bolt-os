@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=BOLT OS desktop branding
+Comment=Apply the BOLT wallpaper once for this user
+Exec=/usr/local/libexec/bolt-set-wallpaper-once
+OnlyShowIn=KDE;
+Terminal=false
+X-KDE-autostart-phase=2

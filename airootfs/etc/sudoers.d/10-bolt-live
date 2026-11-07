@@ -1,2 +1,0 @@
-# This rule is only included in the ephemeral live ISO.
-bolt ALL=(ALL:ALL) NOPASSWD: ALL

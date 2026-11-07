@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
-export HOME="$tmp/home"
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf -- "$TMP_DIR"' EXIT
+export HOME="$TMP_DIR/home"
 export XDG_CONFIG_HOME="$HOME/.config"
 mkdir -p "$HOME"
-script="${1:-./airootfs/usr/local/bin/bolt-preset}"
+SCRIPT="$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-preset"
 
-bash "$script" gaming >/dev/null
+bash "$SCRIPT" gaming >/dev/null
 [[ "$(cat "$XDG_CONFIG_HOME/bolt-os/preset.conf")" == gaming ]]
-[[ "$(bash "$script" status)" == *"Saved BOLT preset: gaming"* ]]
-bash "$script" battery >/dev/null
+[[ "$(bash "$SCRIPT" status)" == *'Saved BOLT preset: gaming'* ]]
+bash "$SCRIPT" battery >/dev/null
 [[ "$(cat "$XDG_CONFIG_HOME/bolt-os/preset.conf")" == battery ]]
-bash "$script" reset >/dev/null
+bash "$SCRIPT" reset >/dev/null
 [[ ! -e "$XDG_CONFIG_HOME/bolt-os/preset.conf" ]]
-[[ "$(bash "$script" status)" == *"Saved BOLT preset: balanced"* ]]
-echo "BOLT preset persistence tests passed."
+[[ "$(bash "$SCRIPT" status)" == *'Saved BOLT preset: balanced'* ]]
+printf 'PASS: BOLT power preset persistence and reset\n'

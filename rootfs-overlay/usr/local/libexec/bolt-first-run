@@ -1,0 +1,207 @@
+#!/usr/bin/bash
+set -Eeuo pipefail
+umask 077
+
+BOLT_STATE_DIR=/var/lib/bolt
+BOLT_COMPLETE_FILE="$BOLT_STATE_DIR/first-run-complete"
+
+bolt_valid_username() {
+  local candidate="$1"
+  [[ "$candidate" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || return 1
+  case "$candidate" in root|nobody|daemon|bin|sys|sync|shutdown|halt|operator|games|ftp|http|dbus|polkitd|systemd-network|systemd-resolve|systemd-timesync|avahi|git) return 1 ;; esac
+  return 0
+}
+
+bolt_valid_timezone() {
+  local candidate="$1"
+  [[ "$candidate" =~ ^[A-Za-z0-9_+./-]+$ ]] || return 1
+  [[ "$candidate" != *..* ]] || return 1
+  [[ -f "/usr/share/zoneinfo/$candidate" ]]
+}
+
+bolt_valid_layout() {
+  local candidate="$1"
+  [[ "$candidate" =~ ^[A-Za-z0-9_-]{2,12}$ ]] || return 1
+  [[ -r /usr/share/X11/xkb/rules/base.lst ]] || return 1
+  grep -Eq "^[[:space:]]+${candidate}[[:space:]]+" /usr/share/X11/xkb/rules/base.lst
+}
+
+bolt_passwords_valid() {
+  [[ ${#1} -ge 12 && "$1" == "$2" ]]
+}
+
+bolt_hash_password() {
+  local password="$1"
+  printf '%s' "$password" | openssl passwd -6 -stdin
+}
+
+bolt_prompt() {
+  dialog --stdout --title 'BOLT OS — First Run' "$@"
+}
+
+bolt_main() {
+  local username password password_confirm password_hash timezone layout groups
+  local tmp_state
+
+  if [[ "$EUID" -ne 0 ]]; then
+    printf 'BOLT first-run setup must run as root.\n' >&2
+    return 1
+  fi
+  if [[ -e "$BOLT_COMPLETE_FILE" ]]; then
+    return 0
+  fi
+
+  clear
+  printf '\n  BOLT OS\n  First-run setup\n\n'
+  printf 'Complete this setup before the desktop can start. If you cancel, reboot to try again.\n\n'
+  printf 'Create your local account. No default user or password is shipped.\n\n'
+
+  while true; do
+    username="$(bolt_prompt --inputbox 'Choose a username (lowercase letters, digits, _ or -):' 10 72)" || return 1
+    if bolt_valid_username "$username" && ! id "$username" >/dev/null 2>&1; then
+      break
+    fi
+    dialog --title 'BOLT OS' --msgbox 'That username is invalid, reserved, or already in use. Please choose another.' 8 68
+  done
+
+  while true; do
+    password="$(bolt_prompt --passwordbox 'Choose a password (minimum 12 characters):' 10 72)" || return 1
+    password_confirm="$(bolt_prompt --passwordbox 'Confirm your password:' 10 72)" || return 1
+    if bolt_passwords_valid "$password" "$password_confirm"; then
+      break
+    fi
+    unset password password_confirm
+    dialog --title 'BOLT OS' --msgbox 'Use at least 12 characters and make sure both entries match.' 8 64
+  done
+
+  timezone="$(bolt_prompt --inputbox 'Timezone (use a name from /usr/share/zoneinfo):' 10 72 'Etc/UTC')" || return 1
+  if ! bolt_valid_timezone "$timezone"; then
+    dialog --title 'BOLT OS' --msgbox 'That timezone is not present on this system. Restart setup and choose a valid zoneinfo name.' 8 72
+    unset password password_confirm
+    return 1
+  fi
+
+  layout="$(bolt_prompt --inputbox 'Keyboard layout (XKB name, for example us, it, de, fr):' 10 72 'us')" || return 1
+  if ! bolt_valid_layout "$layout"; then
+    dialog --title 'BOLT OS' --msgbox 'That keyboard layout is not listed in the installed XKB rules.' 8 72
+    unset password password_confirm
+    return 1
+  fi
+
+  # Apply system-wide locale settings before creating the account. A failure
+  # here leaves no partially provisioned user and the setup can be retried.
+  if ! ln -sfn "/usr/share/zoneinfo/$timezone" /etc/localtime; then
+    unset password password_confirm
+    printf 'BOLT: timezone could not be configured. No account was created.\n' >&2
+    return 1
+  fi
+  printf 'KEYMAP=%s\n' "$layout" > /etc/vconsole.conf
+  if ! localectl set-x11-keymap "$layout"; then
+    printf 'BOLT: localectl could not apply the XKB layout; the explicit Xorg and KDE settings are being written.\n' >&2
+  fi
+  install -d -m 0755 /etc/X11/xorg.conf.d
+  cat > /etc/X11/xorg.conf.d/00-bolt-keyboard.conf <<XKB
+Section "InputClass"
+    Identifier "BOLT OS keyboard layout"
+    MatchIsKeyboard "on"
+    Option "XkbLayout" "$layout"
+EndSection
+XKB
+  if [[ -d "/usr/share/kbd/keymaps" ]]; then
+    localectl set-keymap "$layout" >/dev/null 2>&1 || true
+  fi
+
+  groups=wheel
+  for group in video audio storage optical gamemode; do
+    if getent group "$group" >/dev/null 2>&1; then
+      groups+=",$group"
+    fi
+  done
+
+  # Stage the non-secret completion record before creating the account. It is
+  # atomically published only after the password and home configuration work.
+  if ! install -d -o root -g root -m 0700 "$BOLT_STATE_DIR"; then
+    unset password password_confirm
+    printf 'BOLT: cannot prepare first-run state storage. No account was created.\n' >&2
+    return 1
+  fi
+  if ! tmp_state="$(mktemp "$BOLT_STATE_DIR/.complete.XXXXXX")"; then
+    unset password password_confirm
+    printf 'BOLT: cannot prepare first-run completion state. No account was created.\n' >&2
+    return 1
+  fi
+  printf 'username=%s\ntimezone=%s\nkeyboard=%s\n' "$username" "$timezone" "$layout" > "$tmp_state"
+  chmod 0600 "$tmp_state"
+
+  if ! useradd --create-home --user-group --groups "$groups" --shell /bin/bash "$username"; then
+    rm -f -- "$tmp_state"
+    unset password password_confirm
+    printf 'BOLT: could not create the selected account. No desktop session was started.\n' >&2
+    return 1
+  fi
+  if ! password_hash="$(bolt_hash_password "$password")"; then
+    unset password password_confirm
+    userdel --remove "$username"
+    rm -f -- "$tmp_state"
+    printf 'BOLT: password hashing failed; the incomplete account was removed.\n' >&2
+    return 1
+  fi
+  unset password password_confirm
+  if [[ ! "$password_hash" =~ ^\$6\$ ]]; then
+    unset password_hash
+    userdel --remove "$username"
+    rm -f -- "$tmp_state"
+    printf 'BOLT: password hash generation failed. No password was stored.\n' >&2
+    return 1
+  fi
+  if ! printf '%s:%s\n' "$username" "$password_hash" | chpasswd --encrypted; then
+    unset password_hash
+    userdel --remove "$username"
+    rm -f -- "$tmp_state"
+    printf 'BOLT: password update failed; the incomplete account was removed.\n' >&2
+    return 1
+  fi
+  unset password_hash
+
+  if ! install -d -o "$username" -g "$username" -m 0750 "/home/$username/.config"; then
+    userdel --remove "$username"
+    rm -f -- "$tmp_state"
+    printf 'BOLT: could not prepare the user configuration directory; the incomplete account was removed.\n' >&2
+    return 1
+  fi
+  if ! cat > "/home/$username/.config/kxkbrc" <<KBD
+[Layout]
+LayoutList=$layout
+Use=true
+
+[Global]
+Model=pc105
+KBD
+  then
+    userdel --remove "$username"
+    rm -f -- "$tmp_state"
+    printf 'BOLT: could not write the keyboard preference; the incomplete account was removed.\n' >&2
+    return 1
+  fi
+  if ! chown "$username:$username" "/home/$username/.config/kxkbrc" || \
+    ! chmod 0600 "/home/$username/.config/kxkbrc"; then
+    userdel --remove "$username"
+    rm -f -- "$tmp_state"
+    printf 'BOLT: could not secure the keyboard preference; the incomplete account was removed.\n' >&2
+    return 1
+  fi
+
+  if ! mv -f "$tmp_state" "$BOLT_COMPLETE_FILE"; then
+    userdel --remove "$username"
+    rm -f -- "$tmp_state"
+    printf 'BOLT: could not publish first-run completion; the incomplete account was removed.\n' >&2
+    return 1
+  fi
+
+  dialog --title 'BOLT OS' --msgbox 'Setup is complete. Sign in with the account you just created.' 8 68 || true
+  return 0
+}
+
+if [[ "${BOLT_FIRST_RUN_TEST_ONLY:-0}" != 1 ]]; then
+  bolt_main
+fi

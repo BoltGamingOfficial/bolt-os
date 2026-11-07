@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=BOLT OS first-session setup
-Comment=Apply BOLT OS branding and lightweight live-session defaults
-Exec=/usr/local/libexec/bolt-set-wallpaper-once
-OnlyShowIn=KDE;
-Terminal=false
-X-KDE-autostart-phase=2

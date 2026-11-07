@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+set -Eeuo pipefail
+
+marker="${XDG_CONFIG_HOME:-$HOME/.config}/.bolt-branding-applied"
+[[ -e "$marker" ]] && exit 0
+mkdir -p "$(dirname "$marker")"
+
+if command -v kwriteconfig6 >/dev/null 2>&1; then
+  kwriteconfig6 --file "${XDG_CONFIG_HOME:-$HOME/.config}/baloofilerc" \
+    --group 'Basic Settings' --key Indexing-Enabled false
+fi
+
+if command -v plasma-apply-wallpaperimage >/dev/null 2>&1 && \
+  plasma-apply-wallpaperimage /usr/share/wallpapers/BOLT.svg; then
+  : > "$marker"
+fi
