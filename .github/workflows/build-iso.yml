@@ -57,7 +57,7 @@ jobs:
         run: bash ./build.sh
       - name: Probe UEFI boot in QEMU/OVMF
         env:
-          QEMU_BOOT_TIMEOUT: 300
+          QEMU_BOOT_TIMEOUT: 90
           BOLT_VERSION: ${{ inputs.version || '0.2.0-dev' }}
           DELIVERY_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY
           QEMU_REPORT_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY/testing

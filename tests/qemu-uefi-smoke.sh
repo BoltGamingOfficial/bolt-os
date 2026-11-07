@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 ISO_PATH="${1:-}"
-TIMEOUT_SECONDS="${QEMU_BOOT_TIMEOUT:-300}"
+TIMEOUT_SECONDS="${QEMU_BOOT_TIMEOUT:-90}"
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 
 [[ -n "$ISO_PATH" && -s "$ISO_PATH" ]] || fail 'usage: qemu-uefi-smoke.sh /path/to/BOLT-OS.iso'
@@ -54,7 +54,7 @@ if ! grep -Fq 'BOLT: live overlay upper limit' "$SERIAL_LOG"; then
   cat "$SERIAL_LOG"
   fail 'BOLT initramfs entered but failed to mount the live system; stage-specific diagnostics are above'
 fi
-grep -Fq 'systemd[1]' "$SERIAL_LOG" || {
+grep -Fq 'running in system mode' "$SERIAL_LOG" || {
   cat "$SERIAL_LOG"
   fail 'systemd did not start after the BOLT root switch'
 }

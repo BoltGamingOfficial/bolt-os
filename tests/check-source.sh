@@ -10,6 +10,7 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 [[ -s "$ROOT_DIR/mkinitcpio/hooks/bolt_live" ]] || fail 'BOLT live initramfs hook missing'
 [[ -s "$ROOT_DIR/mkinitcpio/install/bolt_live" ]] || fail 'BOLT live initramfs installer hook missing'
 [[ -s "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" ]] || fail 'first-run program missing'
+[[ -x "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" ]] || fail 'first-run program must be executable'
 
 mapfile -t scripts < <(find "$ROOT_DIR" -type f \( -name '*.sh' -o -path '*/usr/local/bin/bolt-preset' -o -path '*/usr/local/libexec/bolt-first-run' -o -path '*/usr/local/libexec/bolt-set-wallpaper-once' -o -path '*/mkinitcpio/hooks/bolt_live' -o -path '*/mkinitcpio/install/bolt_live' \) -print | sort)
 for script in "${scripts[@]}"; do bash -n "$script" || fail "shell syntax: $script"; done
