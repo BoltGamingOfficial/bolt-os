@@ -21,7 +21,7 @@ REPORT_DIR="${QEMU_REPORT_DIR:-}"
 if [[ -r /dev/kvm && -w /dev/kvm ]]; then
   ACCEL=( -accel kvm -cpu host )
 else
-  ACCEL=( -accel tcg,thread=multi -cpu max )
+  ACCEL=( -accel 'tcg,thread=multi' -cpu max )
 fi
 
 printf 'Starting UEFI QEMU boot probe for %s (timeout %ss)\n' "$ISO_PATH" "$TIMEOUT_SECONDS"
