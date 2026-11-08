@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-BOLT_VERSION="${BOLT_VERSION:-0.3.0-dev}"
+BOLT_VERSION="${BOLT_VERSION:-0.3.1-dev}"
 DELIVERY_DIR="${DELIVERY_DIR:-$ROOT_DIR/BOLT-OS-DELIVERY}"
 WORK_DIR="${WORK_DIR:-$DELIVERY_DIR/work}"
 ROOTFS="$WORK_DIR/rootfs"
@@ -43,8 +43,11 @@ log "Starting BOLT OS $BOLT_VERSION build on $(uname -m)"
 "$ROOT_DIR/tests/check-source.sh"
 "$ROOT_DIR/tests/test-first-run.sh"
 "$ROOT_DIR/tests/test-bolt-preset.sh"
+"$ROOT_DIR/tests/test-apt-compat.sh"
 shellcheck "$ROOT_DIR/build.sh" "$ROOT_DIR/tests/"*.sh \
   "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-preset" \
+  "$ROOT_DIR/rootfs-overlay/usr/local/bin/apt" \
+  "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-help" \
   "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" \
   "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" \
   "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-set-wallpaper-once" \
@@ -84,12 +87,14 @@ mkdir -p "$ROOTFS" "$ISO_ROOT/BOLT/boot" "$ISO_ROOT/boot/limine" "$ISO_ROOT/EFI/
 log 'Installing the minimal system to the isolated root filesystem.'
 pacstrap -K -C "$PACMAN_CONF" "$ROOTFS" "${PACKAGES[@]}"
 
-for executable in sudo pacman firefox prismlauncher wine winetricks flatpak; do
+for executable in sudo pacman konsole firefox prismlauncher wine winetricks flatpak; do
   [[ -x "$ROOTFS/usr/bin/$executable" ]] || fail "required application executable was not installed: $executable"
 done
 
 log 'Applying BOLT root filesystem overlay and first-boot policy.'
 cp -a "$ROOT_DIR/rootfs-overlay/." "$ROOTFS/"
+[[ -x "$ROOTFS/usr/local/bin/apt" ]] || fail 'apt helper is not executable'
+[[ -x "$ROOTFS/usr/local/bin/bolt-help" ]] || fail 'BOLT help is not executable'
 [[ -x "$ROOTFS/usr/local/bin/bolt-install-roblox" ]] || fail 'Roblox installer launcher is not executable'
 grep -Fxq 'PATH=/usr/local/sbin:/usr/local/bin:/usr/bin' "$ROOTFS/etc/environment" || fail 'system PATH configuration is missing /usr/bin'
 install -D -m 0644 "$ROOT_DIR/branding/bolt-wallpaper.svg" "$ROOTFS/usr/share/wallpapers/BOLT.svg"
@@ -136,6 +141,7 @@ arch-chroot "$ROOTFS" visudo -cf /etc/sudoers
 log 'Validating package manager and application launchers.'
 arch-chroot "$ROOTFS" sudo --version >/dev/null
 arch-chroot "$ROOTFS" pacman --version >/dev/null
+arch-chroot "$ROOTFS" konsole --version >/dev/null
 for executable in firefox prismlauncher wine winetricks flatpak; do
   [[ -x "$ROOTFS/usr/bin/$executable" ]] || fail "application disappeared from rootfs: $executable"
 done
@@ -203,6 +209,8 @@ Architecture: x86_64
 Boot manager: Limine (UEFI El Torito plus GPT EFI system partition)
 Kernel: $KERNEL_VERSION
 Package source: official Arch repositories (core/extra/multilib)
+Java runtime: OpenJDK 21 (Prism Launcher)
+Memory support: zram compressed swap (up to 4 GiB virtual size)
 Bundled apps: Firefox, Prism Launcher, Wine, Winetricks, Flatpak
 Roblox: optional per-user Sober installer shortcut (Flathub; unofficial)
 Boot layout: /BOLT/boot plus /BOLT/system.squashfs

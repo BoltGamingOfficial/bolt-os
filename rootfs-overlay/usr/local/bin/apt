@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# apt-style convenience commands translated to native Arch pacman operations.
+set -Eeuo pipefail
+usage() {
+  cat <<'HELP'
+BOLT OS package helper (Arch Linux)
+  apt update                 Full system sync and upgrade
+  apt upgrade                Full system upgrade
+  apt install [-y] PACKAGE   Sync/upgrade, then install package(s)
+  apt remove [-y] PACKAGE    Remove package(s) and unused dependencies
+  apt search QUERY           Search repositories
+  apt show PACKAGE           Show package details
+  apt list --installed       List installed packages
+  apt list --upgradable      List available upgrades
+  apt autoremove             Remove orphan packages
+  apt clean                  Clean package cache
+
+Native Arch examples:
+  sudo pacman -Syu
+  sudo pacman -S PACKAGE
+  sudo pacman -Rns PACKAGE
+  pacman -Ss QUERY
+
+Important: Arch does not support partial upgrades. "apt update" and
+"apt install" run pacman -Syu and can upgrade existing packages. Package
+names and repositories differ from Debian/Ubuntu.
+HELP
+}
+run_privileged() {
+  if (( EUID == 0 )); then exec pacman "$@"; else exec sudo pacman "$@"; fi
+}
+pacman_args=()
+translate_yes() {
+  local arg
+  for arg in "$@"; do
+    case "$arg" in -y|--yes|--assume-yes) pacman_args+=(--noconfirm) ;; *) pacman_args+=("$arg") ;; esac
+  done
+}
+operation="\${1:-help}"
+if (( $# > 0 )); then shift; fi
+case "$operation" in
+  update|upgrade|full-upgrade|dist-upgrade)
+    printf 'BOLT OS: performing a full Arch Linux system upgrade.\n'
+    translate_yes "$@"
+    run_privileged -Syu "\${pacman_args[@]}"
+    ;;
+  install)
+    (( $# > 0 )) || { usage >&2; exit 2; }
+    translate_yes "$@"
+    run_privileged -Syu --needed "\${pacman_args[@]}"
+    ;;
+  remove|purge)
+    (( $# > 0 )) || { usage >&2; exit 2; }
+    translate_yes "$@"
+    run_privileged -Rns "\${pacman_args[@]}"
+    ;;
+  search) (( $# > 0 )) || { usage >&2; exit 2; }; exec pacman -Ss "$@" ;;
+  show) (( $# > 0 )) || { usage >&2; exit 2; }; exec pacman -Si "$@" ;;
+  list)
+    case "\${1:-}" in
+      --installed) shift; exec pacman -Q "$@" ;;
+      --upgradable) shift; exec pacman -Qu "$@" ;;
+      "") exec pacman -Q ;;
+      *) printf 'Use: apt list --installed or apt list --upgradable\n' >&2; exit 2 ;;
+    esac
+    ;;
+  autoremove)
+    mapfile -t orphans < <(pacman -Qtdq 2>/dev/null || true)
+    if (( \${#orphans[@]} == 0 )); then printf 'No orphan packages to remove.\n'; exit 0; fi
+    run_privileged -Rns "\${orphans[@]}"
+    ;;
+  clean|autoclean) translate_yes "$@"; run_privileged -Sc "\${pacman_args[@]}" ;;
+  help|-h|--help) usage ;;
+  *) printf 'Unknown apt-style command: %s\n' "$operation" >&2; usage >&2; exit 2 ;;
+esac

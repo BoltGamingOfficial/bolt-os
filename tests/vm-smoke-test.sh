@@ -37,8 +37,13 @@ root_locked() { [[ "$(passwd -S root | awk '{print $2}')" == L ]]; }
 check 'root account is locked' root_locked
 sudo_requires_authentication() { ! grep -Rqs 'NOPASSWD' /etc/sudoers /etc/sudoers.d; }
 check 'sudo requires authentication' sudo_requires_authentication
+check 'Konsole terminal is available' command -v konsole
 check 'sudo command is available' command -v sudo
 check 'pacman package manager is available' command -v pacman
+check 'apt compatibility command is available' test -x /usr/local/bin/apt
+check 'BOLT help command is available' test -x /usr/local/bin/bolt-help
+check 'zram swap is active' grep -q '/dev/zram' /proc/swaps
+check 'Java runtime works' java -version
 check 'Firefox is installed' command -v firefox
 check 'Prism Launcher is installed' command -v prismlauncher
 check 'Wine is installed' command -v wine

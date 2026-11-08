@@ -22,7 +22,7 @@ on:
       version:
         description: Version string for this development build
         required: true
-        default: 0.3.0-dev
+        default: 0.3.1-dev
         type: string
 
 permissions:
@@ -44,22 +44,25 @@ jobs:
           bash tests/check-source.sh
           bash tests/test-first-run.sh
           bash tests/test-bolt-preset.sh
+          bash tests/test-apt-compat.sh
           shellcheck build.sh tests/*.sh \
             rootfs-overlay/usr/local/bin/bolt-preset \
+            rootfs-overlay/usr/local/bin/apt \
+            rootfs-overlay/usr/local/bin/bolt-help \
             rootfs-overlay/usr/local/bin/bolt-install-roblox \
             rootfs-overlay/usr/local/libexec/bolt-first-run \
             rootfs-overlay/usr/local/libexec/bolt-set-wallpaper-once \
             mkinitcpio/install/bolt_live mkinitcpio/hooks/bolt_live
       - name: Build BOLT ISO
         env:
-          BOLT_VERSION: ${{ inputs.version || '0.3.0-dev' }}
+          BOLT_VERSION: ${{ inputs.version || '0.3.1-dev' }}
           DELIVERY_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY
           WORK_DIR: /var/tmp/bolt-os-build
         run: bash ./build.sh
       - name: Probe UEFI boot in QEMU/OVMF
         env:
           QEMU_BOOT_TIMEOUT: 90
-          BOLT_VERSION: ${{ inputs.version || '0.3.0-dev' }}
+          BOLT_VERSION: ${{ inputs.version || '0.3.1-dev' }}
           DELIVERY_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY
           QEMU_REPORT_DIR: ${{ github.workspace }}/BOLT-OS-DELIVERY/testing
         run: bash tests/qemu-uefi-smoke.sh "$DELIVERY_DIR/iso/BOLT-OS-${BOLT_VERSION}-x86_64.iso"
@@ -67,7 +70,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: BOLT-OS-${{ inputs.version || '0.3.0-dev' }}-x86_64
+          name: BOLT-OS-${{ inputs.version || '0.3.1-dev' }}-x86_64
           path: BOLT-OS-DELIVERY/
           if-no-files-found: warn
           retention-days: 14

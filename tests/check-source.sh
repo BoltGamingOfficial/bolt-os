@@ -11,19 +11,28 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 [[ -s "$ROOT_DIR/mkinitcpio/install/bolt_live" ]] || fail 'BOLT live initramfs installer hook missing'
 [[ -s "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" ]] || fail 'first-run program missing'
 [[ -x "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" ]] || fail 'first-run program must be executable'
+[[ -x "$ROOT_DIR/rootfs-overlay/usr/local/bin/apt" ]] || fail 'apt helper must be executable'
+[[ -x "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-help" ]] || fail 'BOLT help command must be executable'
+[[ -s "$ROOT_DIR/rootfs-overlay/etc/profile.d/00-bolt-path.sh" ]] || fail 'login PATH profile is missing'
+[[ -s "$ROOT_DIR/rootfs-overlay/etc/systemd/zram-generator.conf" ]] || fail 'zram config is missing'
+[[ -s "$ROOT_DIR/rootfs-overlay/etc/skel/.config/kdeglobals" ]] || fail 'KDE defaults are missing'
 [[ -s "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" ]] || fail 'Roblox installer launcher missing'
 [[ -x "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" ]] || fail 'Roblox installer launcher must be executable'
 [[ -s "$ROOT_DIR/rootfs-overlay/usr/share/applications/bolt-roblox.desktop" ]] || fail 'Roblox menu entry missing'
 [[ -s "$ROOT_DIR/rootfs-overlay/etc/environment" ]] || fail 'system environment file missing'
 grep -Fxq 'PATH=/usr/local/sbin:/usr/local/bin:/usr/bin' "$ROOT_DIR/rootfs-overlay/etc/environment" || fail 'system PATH must include /usr/bin'
+grep -Fq '/usr/bin' "$ROOT_DIR/rootfs-overlay/etc/profile.d/00-bolt-path.sh" || fail 'login profile must include /usr/bin'
+grep -Fq 'pacman -Syu' "$ROOT_DIR/rootfs-overlay/usr/local/bin/apt" || fail 'apt helper must map updates to full Arch upgrade'
+grep -Fq 'AnimationDurationFactor=0.5' "$ROOT_DIR/rootfs-overlay/etc/skel/.config/kdeglobals" || fail 'KDE animation defaults missing'
+grep -Fq 'zram-size = min(ram / 2, 4096)' "$ROOT_DIR/rootfs-overlay/etc/systemd/zram-generator.conf" || fail 'zram policy missing'
 
-mapfile -t scripts < <(find "$ROOT_DIR" -type f \( -name '*.sh' -o -path '*/usr/local/bin/bolt-preset' -o -path '*/usr/local/bin/bolt-install-roblox' -o -path '*/usr/local/libexec/bolt-first-run' -o -path '*/usr/local/libexec/bolt-set-wallpaper-once' -o -path '*/mkinitcpio/hooks/bolt_live' -o -path '*/mkinitcpio/install/bolt_live' \) -print | sort)
+mapfile -t scripts < <(find "$ROOT_DIR" -type f \( -name '*.sh' -o -path '*/usr/local/bin/bolt-preset' -o -path '*/usr/local/bin/bolt-install-roblox' -o -path '*/usr/local/bin/apt' -o -path '*/usr/local/bin/bolt-help' -o -path '*/usr/local/libexec/bolt-first-run' -o -path '*/usr/local/libexec/bolt-set-wallpaper-once' -o -path '*/mkinitcpio/hooks/bolt_live' -o -path '*/mkinitcpio/install/bolt_live' \) -print | sort)
 for script in "${scripts[@]}"; do bash -n "$script" || fail "shell syntax: $script"; done
 
 packages="$ROOT_DIR/packages.x86_64"
 duplicates="$(grep -Ev '^[[:space:]]*(#|$)' "$packages" | LC_ALL=C sort | uniq -d)"
 [[ -z "$duplicates" ]] || fail "duplicate packages: $duplicates"
-for package in base mkinitcpio linux linux-firmware networkmanager wpa_supplicant dbus-broker-units kbd xkeyboard-config plasma-desktop sddm xorg-server sudo firefox prismlauncher wine wine-gecko wine-mono winetricks flatpak steam lutris gamemode gamescope mangohud mesa lib32-mesa vulkan-intel vulkan-radeon lib32-vulkan-intel lib32-vulkan-radeon nvidia-open nvidia-utils lib32-nvidia-utils; do
+for package in base mkinitcpio linux linux-firmware networkmanager wpa_supplicant dbus-broker-units kbd xkeyboard-config plasma-desktop sddm xorg-server sudo firefox prismlauncher jre21-openjdk bash-completion zram-generator wine wine-gecko wine-mono winetricks flatpak steam lutris gamemode gamescope mangohud mesa lib32-mesa vulkan-intel vulkan-radeon lib32-vulkan-intel lib32-vulkan-radeon nvidia-open nvidia-utils lib32-nvidia-utils; do
   grep -Fxq "$package" "$packages" || fail "required package missing: $package"
 done
 for forbidden in bluez archiso mkarchiso opencode ollama; do
@@ -68,4 +77,4 @@ if grep -RniE 'archiso|mkarchiso|install_dir="arch"|AI Hub|OpenCode' \
   fail 'legacy image framework or AI feature references remain in delivery source'
 fi
 
-printf 'PASS: source structure, Bash syntax, package manifest, BOLT branding, UEFI hybrid boot, first-run gate, and privilege policy\n'
+printf 'PASS: source structure, Bash syntax, package manifest, UEFI boot, first-run gate, terminal compatibility and memory defaults\n'

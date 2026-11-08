@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cat <<'HELP'
+BOLT OS — quick terminal help
+
+Apps
+  firefox              Web browser
+  prismlauncher        Minecraft launcher
+  winecfg              Configure Windows compatibility
+  wine PROGRAM.exe     Run a Windows program
+  winetricks           Install common Windows libraries
+  Steam                Enable Steam Play / Proton in Settings > Compatibility
+  Roblox (Sober)       Application menu shortcut; needs Vulkan
+
+Packages
+  sudo pacman -Syu                 Update BOLT OS
+  sudo pacman -S firefox           Install a package
+  sudo pacman -Rns PACKAGE         Remove a package
+  pacman -Ss QUERY                 Search repositories
+  apt help                         Apt-style command translator help
+
+Performance
+  bolt-preset status | gaming | battery
+  free -h
+  zramctl
+
+BOLT uses Arch Linux. pacman is the native package manager.
+HELP

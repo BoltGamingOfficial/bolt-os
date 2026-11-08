@@ -25,10 +25,13 @@ jobs:
           bash tests/check-source.sh
           bash tests/test-first-run.sh
           bash tests/test-bolt-preset.sh
+          bash tests/test-apt-compat.sh
       - name: ShellCheck
         run: |
           shellcheck build.sh tests/*.sh \
             rootfs-overlay/usr/local/bin/bolt-preset \
+            rootfs-overlay/usr/local/bin/apt \
+            rootfs-overlay/usr/local/bin/bolt-help \
             rootfs-overlay/usr/local/bin/bolt-install-roblox \
             rootfs-overlay/usr/local/libexec/bolt-first-run \
             rootfs-overlay/usr/local/libexec/bolt-set-wallpaper-once \

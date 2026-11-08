@@ -13,7 +13,7 @@ BOLT uses official Arch package repositories as its binary package source, but o
 - A **Roblox (Sober)** menu shortcut. On first launch it asks before installing the unofficial Sober Flatpak for the current user. Sober is closed-source, experimental community software, not made or supported by Roblox; it runs Roblox through a specialized Android runtime and can stop working after Roblox updates.
 - Vulkan/OpenGL userspace for Intel and AMD Mesa drivers, plus NVIDIA's open kernel-module driver and matching userspace. 32-bit graphics and audio libraries are included for Steam/Proton.
 - GameMode, Gamescope, and MangoHud.
-- NetworkManager, PipeWire/WirePlumber, and power-profiles-daemon. Bluetooth is not installed or started.
+- NetworkManager, PipeWire/WirePlumber, power-profiles-daemon, and zram compressed swap for occasional memory pressure. Bluetooth is not installed or started.
 - Gold-and-black BOLT branding in the Limine menu, SDDM theme, and Plasma wallpaper.
 - A TTY first-run account wizard that collects a username, password and confirmation, timezone, and XKB keyboard layout before SDDM may start.
 
@@ -36,11 +36,11 @@ sudo pacman -S prismlauncher wine winetricks
 pacman -Qs firefox               # search installed packages
 ```
 
-The `sudo` package is part of the image and the first-run account is added to `wheel`. The system login environment explicitly includes `/usr/bin` in `PATH`. There is no fake `apt` compatibility command.
+The `sudo` package is part of the image and the first-run account is added to `wheel`. `/usr/bin` is added to the system login environment, login profile, and new users' interactive Bash configuration. The `apt` convenience command translates common `update`, `upgrade`, `install`, `remove`, `search`, and `show` operations into pacman actions. On Arch, `apt update` and `apt install` deliberately perform a full `pacman -Syu` because partial upgrades are unsupported; package names and repositories differ from Debian/Ubuntu.
 
 ## Live-image behavior
 
-The image is ephemeral. The writable overlay is a tmpfs whose configured upper bound is 50% of detected physical RAM; tmpfs allocates memory as files are written, so the cap is not pre-reserved RAM and is not disk capacity. Changes are lost on reboot. A Plasma desktop plus Firefox, Wine, game launchers and Vulkan libraries cannot run in megabytes of RAM. Boot and startup are being optimized, but idle RAM must be measured on real hardware before publishing a number. The build report records ISO and compressed/uncompressed image sizes; idle RAM and installed disk footprint are deliberately not reported until measured on a booted system and a tested installer exists.
+The image is ephemeral. The writable overlay is a tmpfs whose configured upper bound is 50% of detected physical RAM; tmpfs allocates memory as files are written, so the cap is not pre-reserved RAM and is not disk capacity. Zram adds compressed swap capacity under pressure but does not create physical RAM. The KDE desktop and its browser, launchers and games cannot run in a few megabytes. The defaults reduce startup delay and animation overhead, but idle memory must be measured on real hardware before publishing a number. Changes to the live overlay are lost on reboot.
 
 ## Hardware scope
 

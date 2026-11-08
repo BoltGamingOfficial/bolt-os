@@ -21,6 +21,8 @@ polkit
 polkit-kde-agent
 xdg-user-dirs
 xdg-utils
+bash-completion
+zram-generator
 
 # Minimal KDE Plasma desktop: shell, panel, network/audio applets, settings, power, display
 plasma-desktop
@@ -51,6 +53,7 @@ wireplumber
 # Everyday apps and Windows compatibility
 firefox
 prismlauncher
+jre21-openjdk
 wine
 wine-gecko
 wine-mono

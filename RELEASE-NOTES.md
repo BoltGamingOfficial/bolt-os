@@ -1,33 +1,22 @@
-# BOLT OS 0.3.0-dev — release notes
+# BOLT OS 0.3.1-dev — release notes
 
-## Engineering changes
+## Desktop and gaming applications
+- Bundled Firefox and Prism Launcher with OpenJDK 21.
+- Retained Wine, Wine Gecko/Mono and Winetricks for Windows application compatibility, plus Steam/Proton and Lutris.
+- Kept Roblox as an opt-in Sober Flatpak install from the desktop shortcut. Sober is unofficial, proprietary, experimental community software, not Roblox-supported.
 
-- Replaced standard live-image profile inheritance with a BOLT-owned Limine UEFI El Torito boot tree, `/BOLT` file layout, `BOLT_LIVE` label, and custom initramfs hook.
-- Kept kernel and initramfs payloads outside the compressed root image to avoid duplicate boot data.
-- Added zstd level-15 squashfs compression and build-time ISO/image size reporting.
-- Removed the fixed live account, SDDM autologin, and passwordless sudo rule.
-- Added an interactive TTY setup flow that creates the first account and applies a salted SHA-512 crypt password hash (minimum 12 characters), timezone, and keyboard layout before SDDM is allowed to start.
-- Added a narrow password-required wheel sudo policy and locked the root account.
-- Reduced the desktop package list; removed Bluetooth, web browser, extra game launcher overlap, and AI/developer agents from the default image.
-- Selected Steam plus Lutris, with GameMode, Gamescope, MangoHud, Mesa Intel/AMD Vulkan, and NVIDIA open-driver userspace.
-- Added source checks, first-run hash/validator tests, preset persistence tests, ShellCheck CI, and a separate Arch-host ISO build workflow.
+## Performance and terminal usability
+- Retained the two-second Limine menu, fast initramfs compression and Zstandard level-6 SquashFS tuning.
+- Added zram compressed swap sized to half of physical RAM (maximum 4 GiB), using LZ4 for low CPU overhead.
+- Reduced default KDE animation duration and kept Baloo file indexing disabled.
+- Added system and per-user Bash PATH setup to ensure Konsole can find /usr/bin tools.
+- Added an apt-style convenience bridge for common commands, while documenting Arch's full-upgrade requirement and pacman package names.
+- Added BOLT terminal help, Bash completion, and runtime checks for Konsole, sudo, pacman, Java and zram.
 
-## Not included
+## Limitations
+- A KDE gaming desktop cannot operate in only a few megabytes of RAM. Zram provides compressed swap under pressure but is not additional physical memory. Idle RAM and boot time still require measurement on real hardware.
+- Sober is unofficial, closed-source and experimental, and is not supported by Roblox. VirtualBox may not expose the Vulkan capability it needs; test on the physical Intel Iris Xe graphics stack.
+- Wine and Proton compatibility varies by application and game.
+- This remains an ephemeral live ISO without a disk installer.
 
-- No disk installer or partitioning UI.
-- No persistent on-disk install or tested bootloader installation.
-- No completed QEMU/OVMF boot verification or physical GPU matrix in this source delivery.
-- BIOS boot and UEFI boot from USB-written media are not included in the current boot claim; the target is UEFI optical/VM boot.
-- The official Linux kernel release string may still include an Arch build suffix; a separately branded kernel build is not included.
-- No idle RAM or installed disk-footprint benchmark until those measurements can be run against an actually booted image and an installable target.
-
-This is an experimental development build recipe, not a release candidate or stable distribution.
-
-
-## 0.3.0-dev
-
-- Bundled Firefox, Prism Launcher, Wine, Wine Gecko/Mono, Winetricks, and Flatpak.
-- Added an opt-in Roblox (Sober) menu shortcut that installs the unofficial Flathub client per-user after an explicit prompt.
-- Fixed login PATH setup and added build/runtime checks for sudo and pacman.
-- Shortened the Limine countdown, stopped preloading NVIDIA modules on every device, and tuned compression for faster startup.
-- Added application and boot-time checks to the runtime smoke test.
+BOLT OS is an experimental development build, not a stable distribution.
