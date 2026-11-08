@@ -51,6 +51,23 @@ pipewire-pulse
 wireplumber
 
 # Everyday apps and Windows compatibility
+# Native file viewers, broad media codec support, thumbnails, and Sober diagnostics
+kate
+gwenview
+vlc
+vlc-plugins-extra
+kimageformats
+qt6-imageformats
+libavif
+libheif
+libjxl
+libraw
+openexr
+ffmpegthumbs
+kdegraphics-thumbnailers
+mesa-utils
+jq
+xdg-desktop-portal-gtk
 firefox
 prismlauncher
 jre21-openjdk

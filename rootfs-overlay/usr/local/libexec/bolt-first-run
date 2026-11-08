@@ -112,7 +112,7 @@ XKB
   fi
 
   groups=wheel
-  for group in video audio storage optical gamemode; do
+  for group in video audio storage optical gamemode render; do
     if getent group "$group" >/dev/null 2>&1; then
       groups+=",$group"
     fi

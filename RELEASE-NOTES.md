@@ -1,9 +1,18 @@
 # BOLT OS 0.3.1-dev — release notes
 
-## Desktop and gaming applications
-- Bundled Firefox and Prism Launcher with OpenJDK 21.
-- Retained Wine, Wine Gecko/Mono and Winetricks for Windows application compatibility, plus Steam/Proton and Lutris.
-- Kept Roblox as an opt-in Sober Flatpak install from the desktop shortcut. Sober is unofficial, proprietary, experimental community software, not Roblox-supported.
+## Desktop and everyday applications
+- Added Kate as the default text/source/configuration viewer and editor.
+- Added VLC with its extra plugin collection as the default player for common audio and video containers/codecs.
+- Added Gwenview with Qt/KDE image-format plugins as the default image viewer, plus Dolphin thumbnail providers for videos and additional graphics formats.
+- Added explicit per-user MIME defaults for common text, audio, video, and image formats.
+
+## Roblox / Sober
+- Reworked the Sober launcher to diagnose CPU instruction support, kernel, virtualization, Vulkan/OpenGL devices, DRM render-node permissions, Flatpak installation, and XDG portal state.
+- Added saved launch output and instructions for collecting Sober's own logs.
+- Added the documented `use_opengl=true` fallback while preserving other valid settings in Sober's JSON configuration.
+- Added a confirmed per-user clean-reinstall option; the launcher now checks Flatpak install scope and offers updates before launch.
+- Added the `render` group to first-run GPU access where the group exists.
+- Important: Sober's developers do not support virtual machines without GPU passthrough. The OpenGL option is a best-effort workaround and cannot guarantee that Sober will run in VirtualBox.
 
 ## Performance and terminal usability
 - Retained the two-second Limine menu, fast initramfs compression and Zstandard level-6 SquashFS tuning.
@@ -14,8 +23,9 @@
 - Added BOLT terminal help, Bash completion, and runtime checks for Konsole, sudo, pacman, Java and zram.
 
 ## Limitations
+- VLC/Gwenview/Kate cover broad common formats, not every proprietary, DRM-protected, encrypted, corrupt, or unsupported file format.
 - A KDE gaming desktop cannot operate in only a few megabytes of RAM. Zram provides compressed swap under pressure but is not additional physical memory. Idle RAM and boot time still require measurement on real hardware.
-- Sober is unofficial, closed-source and experimental, and is not supported by Roblox. VirtualBox may not expose the Vulkan capability it needs; test on the physical Intel Iris Xe graphics stack.
+- Sober is unofficial, closed-source and experimental, and is not supported by Roblox. VirtualBox may not expose a usable Vulkan device; test on bare-metal Intel Iris Xe first.
 - Wine and Proton compatibility varies by application and game.
 - This remains an ephemeral live ISO without a disk installer.
 

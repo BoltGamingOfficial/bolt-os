@@ -19,6 +19,7 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 [[ -s "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" ]] || fail 'Roblox installer launcher missing'
 [[ -x "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" ]] || fail 'Roblox installer launcher must be executable'
 [[ -s "$ROOT_DIR/rootfs-overlay/usr/share/applications/bolt-roblox.desktop" ]] || fail 'Roblox menu entry missing'
+[[ -s "$ROOT_DIR/rootfs-overlay/etc/skel/.config/mimeapps.list" ]] || fail 'default file associations missing'
 [[ -s "$ROOT_DIR/rootfs-overlay/etc/environment" ]] || fail 'system environment file missing'
 grep -Fxq 'PATH=/usr/local/sbin:/usr/local/bin:/usr/bin' "$ROOT_DIR/rootfs-overlay/etc/environment" || fail 'system PATH must include /usr/bin'
 grep -Fq '/usr/bin' "$ROOT_DIR/rootfs-overlay/etc/profile.d/00-bolt-path.sh" || fail 'login profile must include /usr/bin'
@@ -32,7 +33,7 @@ for script in "${scripts[@]}"; do bash -n "$script" || fail "shell syntax: $scri
 packages="$ROOT_DIR/packages.x86_64"
 duplicates="$(grep -Ev '^[[:space:]]*(#|$)' "$packages" | LC_ALL=C sort | uniq -d)"
 [[ -z "$duplicates" ]] || fail "duplicate packages: $duplicates"
-for package in base mkinitcpio linux linux-firmware networkmanager wpa_supplicant dbus-broker-units kbd xkeyboard-config plasma-desktop sddm xorg-server sudo firefox prismlauncher jre21-openjdk bash-completion zram-generator wine wine-gecko wine-mono winetricks flatpak steam lutris gamemode gamescope mangohud mesa lib32-mesa vulkan-intel vulkan-radeon lib32-vulkan-intel lib32-vulkan-radeon nvidia-open nvidia-utils lib32-nvidia-utils; do
+for package in base mkinitcpio linux linux-firmware networkmanager wpa_supplicant dbus-broker-units kbd xkeyboard-config plasma-desktop sddm xorg-server sudo firefox prismlauncher jre21-openjdk bash-completion zram-generator wine wine-gecko wine-mono winetricks flatpak steam lutris gamemode gamescope mangohud mesa lib32-mesa vulkan-intel vulkan-radeon lib32-vulkan-intel lib32-vulkan-radeon nvidia-open nvidia-utils lib32-nvidia-utils kate gwenview vlc vlc-plugins-extra kimageformats qt6-imageformats ffmpegthumbs jq mesa-utils xdg-desktop-portal-gtk; do
   grep -Fxq "$package" "$packages" || fail "required package missing: $package"
 done
 for forbidden in bluez archiso mkarchiso opencode ollama; do
@@ -68,6 +69,12 @@ grep -Fq 'timeout: 2' "$ROOT_DIR/limine.conf" || fail 'Limine should use a short
 grep -Fq 'COMPRESSION_OPTIONS=(-3)' "$ROOT_DIR/mkinitcpio/bolt-live.conf" || fail 'initramfs should use fast zstd compression'
 if grep -Eq '^MODULES=.*nvidia' "$ROOT_DIR/mkinitcpio/bolt-live.conf"; then fail 'NVIDIA modules must not be forced into every initramfs'; fi
 grep -Fq 'org.vinegarhq.Sober' "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" || fail 'Roblox launcher must target Sober'
+grep -Fq -- '--diagnose' "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" || fail 'Roblox launcher diagnostics missing'
+grep -Fq 'use_opengl = true' "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" || fail 'Sober OpenGL workaround missing'
+grep -Fq 'render' "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" || fail 'render GPU access group missing'
+grep -Fq 'org.kde.kate.desktop' "$ROOT_DIR/rootfs-overlay/etc/skel/.config/mimeapps.list" || fail 'Kate text default missing'
+grep -Fq 'vlc.desktop' "$ROOT_DIR/rootfs-overlay/etc/skel/.config/mimeapps.list" || fail 'VLC audio/video defaults missing'
+grep -Fq 'org.kde.gwenview.desktop' "$ROOT_DIR/rootfs-overlay/etc/skel/.config/mimeapps.list" || fail 'Gwenview image defaults missing'
 grep -Fq 'https://dl.flathub.org/repo/flathub.flatpakrepo' "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" || fail 'Roblox launcher must use Flathub'
 grep -Fq 'unofficial' "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" || fail 'Roblox launcher must disclose unofficial status'
 if grep -Fq 'newroot=/run/' "$ROOT_DIR/mkinitcpio/hooks/bolt_live"; then fail 'new root is nested under /run'; fi

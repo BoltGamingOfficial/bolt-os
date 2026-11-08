@@ -87,7 +87,7 @@ mkdir -p "$ROOTFS" "$ISO_ROOT/BOLT/boot" "$ISO_ROOT/boot/limine" "$ISO_ROOT/EFI/
 log 'Installing the minimal system to the isolated root filesystem.'
 pacstrap -K -C "$PACMAN_CONF" "$ROOTFS" "${PACKAGES[@]}"
 
-for executable in sudo pacman konsole firefox prismlauncher wine winetricks flatpak; do
+for executable in sudo pacman konsole firefox prismlauncher wine winetricks flatpak kate gwenview vlc jq glxinfo vulkaninfo; do
   [[ -x "$ROOTFS/usr/bin/$executable" ]] || fail "required application executable was not installed: $executable"
 done
 
@@ -142,7 +142,7 @@ log 'Validating package manager and application launchers.'
 arch-chroot "$ROOTFS" sudo --version >/dev/null
 arch-chroot "$ROOTFS" pacman --version >/dev/null
 # Konsole is checked as an installed executable above; do not launch Qt GUI in the headless build chroot.
-for executable in firefox prismlauncher wine winetricks flatpak; do
+for executable in firefox prismlauncher wine winetricks flatpak kate gwenview vlc jq glxinfo vulkaninfo; do
   [[ -x "$ROOTFS/usr/bin/$executable" ]] || fail "application disappeared from rootfs: $executable"
 done
 

@@ -3,27 +3,300 @@ set -Eeuo pipefail
 
 APP_ID="org.vinegarhq.Sober"
 FLATHUB_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
+SOBER_CONFIG="$HOME/.var/app/$APP_ID/config/sober/config.json"
+SOBER_LOG_DIR="$HOME/.var/app/$APP_ID/data/sober/sober_logs"
+BOLT_LOG_DIR="\${XDG_STATE_HOME:-$HOME/.local/state}/bolt-os"
+APP_SCOPE="user"
 
-if ! command -v flatpak >/dev/null 2>&1; then
-  printf 'BOLT OS: Flatpak is not installed. Reinstall or update to a current BOLT OS image.\n' >&2
-  exit 127
-fi
+fail() {
+  printf 'BOLT Sober: %s\n' "$*" >&2
+  return 1
+}
 
-if flatpak info --user "$APP_ID" >/dev/null 2>&1; then
-  exec flatpak run --user "$APP_ID"
-fi
+usage() {
+  cat <<'HELP'
+BOLT Roblox / Sober helper
 
-printf '\nBOLT OS — Roblox launcher\n\n'
-printf 'This installs Sober from Flathub for your user account.\n'
-printf 'Sober is unofficial, closed-source, experimental community software.\n'
-printf 'It is not made, endorsed or supported by Roblox, and may stop working after updates.\n'
-printf 'The first install downloads the app and its runtime and requires an internet connection.\n\n'
-read -r -p 'Continue with the Sober installation? [y/N] ' answer
-case "${answer,,}" in
-  y|yes) ;;
-  *) printf 'Installation cancelled.\n'; exit 0 ;;
-esac
+  bolt-install-roblox             Diagnose, install/update, and launch Sober
+  bolt-install-roblox --diagnose  Print CPU, VM, GPU, Vulkan, Flatpak and portal checks
+  bolt-install-roblox --opengl    Enable Sober's documented OpenGL fallback, then launch
+  bolt-install-roblox --enable-opengl
+                                  Set use_opengl=true without launching Sober
+  bolt-install-roblox --logs      Show the latest BOLT and Sober logs
+  bolt-install-roblox --reset     Reinstall this user's Sober app and data (asks first)
+  bolt-install-roblox --help      Show this help
 
-flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL"
-flatpak install --user --assumeyes flathub "$APP_ID"
-exec flatpak run --user "$APP_ID"
+Sober is unofficial, closed-source, experimental software and is not supported
+by Roblox. Its developers do not support virtual machines unless a real GPU is
+passed through to the guest. The OpenGL option is a best-effort fallback only.
+HELP
+}
+
+have_cpu_flag() {
+  grep -qw -- "$1" /proc/cpuinfo
+}
+
+detect_vm() {
+  local detected vendor product
+  detected=""
+  if command -v systemd-detect-virt >/dev/null 2>&1; then
+    detected="$(systemd-detect-virt --vm 2>/dev/null || true)"
+  fi
+  if [[ -n "$detected" && "$detected" != "none" ]]; then
+    printf '%s\n' "$detected"
+    return 0
+  fi
+  vendor="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
+  product="$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)"
+  case "\${vendor,,} \${product,,}" in
+    *virtualbox*) printf 'VirtualBox\n' ;;
+    *vmware*) printf 'VMware\n' ;;
+    *qemu*|*kvm*) printf 'QEMU/KVM\n' ;;
+    *parallels*) printf 'Parallels\n' ;;
+    *) return 1 ;;
+  esac
+}
+
+has_vulkan_device() {
+  local summary
+  command -v vulkaninfo >/dev/null 2>&1 || return 1
+  summary="$(vulkaninfo --summary 2>&1 || true)"
+  grep -Eq 'deviceName[[:space:]]*=' <<<"$summary"
+}
+
+show_diagnostics() {
+  local kernel version vm groups
+  printf '\nBOLT OS — Sober compatibility report\n'
+  printf '%s\n' '-------------------------------------'
+  kernel="$(uname -r)"
+  version="\${kernel%%-*}"
+  printf 'Kernel: %s' "$kernel"
+  if [[ "$version" =~ ^([0-9]+)\.([0-9]+) ]]; then
+    if (( BASH_REMATCH[1] > 5 || (BASH_REMATCH[1] == 5 && BASH_REMATCH[2] >= 11) )); then
+      printf ' (Sober minimum met: >= 5.11)\n'
+    else
+      printf ' (TOO OLD: Sober requires >= 5.11)\n'
+    fi
+  else
+    printf ' (could not parse version)\n'
+  fi
+
+  if have_cpu_flag sse4_1; then
+    printf 'CPU SSE4.1: present (minimum requirement)\n'
+  else
+    printf 'CPU SSE4.1: MISSING — Sober cannot run on this CPU\n'
+  fi
+  if have_cpu_flag sse4_2; then
+    printf 'CPU SSE4.2: present (recommended for native performance)\n'
+  else
+    printf 'CPU SSE4.2: absent; Sober may emulate it and run poorly or fail\n'
+  fi
+
+  if vm="$(detect_vm)"; then
+    printf 'Virtual machine: %s\n' "$vm"
+    printf '%s\n' 'WARNING: Sober officially advises against VMs without GPU passthrough.'
+    printf '%s\n' 'The OpenGL workaround may not work and performance may be very poor.'
+  else
+    printf 'Virtual machine: not detected\n'
+  fi
+
+  if has_vulkan_device; then
+    printf 'Vulkan: a physical/logical device is visible to vulkaninfo\n'
+    vulkaninfo --summary 2>&1 | sed -n '/deviceName[[:space:]]*=/p;/driverName[[:space:]]*=/p' || true
+  else
+    printf 'Vulkan: NO usable device detected by vulkaninfo\n'
+  fi
+
+  if command -v glxinfo >/dev/null 2>&1; then
+    glxinfo -B 2>&1 | sed -n '/OpenGL vendor string/p;/OpenGL renderer string/p;/OpenGL version string/p' || true
+  else
+    printf 'OpenGL details: glxinfo is unavailable\n'
+  fi
+
+  groups="$(id -nG 2>/dev/null || true)"
+  if compgen -G '/dev/dri/renderD*' >/dev/null; then
+    printf 'DRM render nodes:\n'
+    ls -l /dev/dri/renderD* 2>/dev/null || true
+  else
+    printf 'DRM render nodes: NONE visible in this session\n'
+  fi
+  if grep -qw render <<<"\${groups// /$'\n'}"; then
+    printf 'User GPU access: render group present\n'
+  else
+    printf 'User GPU access: render group absent (logind ACL may still grant access)\n'
+  fi
+  printf 'Display session: %s\n' "\${XDG_SESSION_TYPE:-unknown}"
+  if command -v systemctl >/dev/null 2>&1 && systemctl --user is-active --quiet xdg-desktop-portal.service 2>/dev/null; then
+    printf 'XDG portal: active\n'
+  else
+    printf 'XDG portal: not active / not detectable (browser game links may not open)\n'
+  fi
+
+  if command -v flatpak >/dev/null 2>&1; then
+    if flatpak info --user "$APP_ID" >/dev/null 2>&1; then
+      printf 'Sober Flatpak: installed for this user\n'
+    elif flatpak info --system "$APP_ID" >/dev/null 2>&1; then
+      printf 'Sober Flatpak: installed system-wide\n'
+    else
+      printf 'Sober Flatpak: not installed\n'
+    fi
+  else
+    printf 'Flatpak: NOT INSTALLED\n'
+  fi
+
+  if [[ -f "$SOBER_CONFIG" ]]; then
+    if jq -e '.use_opengl == true' "$SOBER_CONFIG" >/dev/null 2>&1; then
+      printf 'Sober renderer setting: use_opengl=true\n'
+    else
+      printf 'Sober renderer setting: default (Vulkan/automatic)\n'
+    fi
+  else
+    printf 'Sober config: not created yet\n'
+  fi
+  printf 'Sober application logs: %s\n' "$SOBER_LOG_DIR"
+  printf 'BOLT launch logs: %s\n\n' "$BOLT_LOG_DIR"
+}
+
+enable_opengl() {
+  local config_dir tmp
+  config_dir="$(dirname "$SOBER_CONFIG")"
+  mkdir -p "$config_dir"
+  tmp="$(mktemp "$config_dir/.config.json.XXXXXX")"
+  if [[ -f "$SOBER_CONFIG" ]]; then
+    if ! jq -e 'type == "object"' "$SOBER_CONFIG" >/dev/null 2>&1; then
+      rm -f -- "$tmp"
+      fail "The existing config is not a valid JSON object. It was left untouched: $SOBER_CONFIG"
+      return 1
+    fi
+    if ! jq '.use_opengl = true' "$SOBER_CONFIG" >"$tmp"; then
+      rm -f -- "$tmp"
+      fail 'Could not safely update the Sober config.'
+      return 1
+    fi
+  else
+    printf '{\n  "use_opengl": true\n}\n' >"$tmp"
+  fi
+  chmod 0600 "$tmp"
+  mv -f -- "$tmp" "$SOBER_CONFIG"
+  printf 'Enabled Sober OpenGL fallback in %s\n' "$SOBER_CONFIG"
+}
+
+ensure_flatpak_app() {
+  if ! command -v flatpak >/dev/null 2>&1; then
+    fail 'Flatpak is missing. This BOLT image should include it; run sudo pacman -Syu flatpak.'
+    return 1
+  fi
+
+  if flatpak info --user "$APP_ID" >/dev/null 2>&1; then
+    APP_SCOPE="user"
+  elif flatpak info --system "$APP_ID" >/dev/null 2>&1; then
+    APP_SCOPE="system"
+  else
+    printf '\nThis installs Sober from Flathub for your user account.\n'
+    printf 'Sober is unofficial, closed-source, experimental community software.\n'
+    printf 'It is not made, endorsed or supported by Roblox.\n'
+    read -r -p 'Continue with the Sober installation? [y/N] ' answer
+    case "\${answer,,}" in
+      y|yes) ;;
+      *) printf 'Installation cancelled.\n'; return 1 ;;
+    esac
+    flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL"
+    flatpak install --user --assumeyes flathub "$APP_ID"
+    APP_SCOPE="user"
+  fi
+
+  printf '\nChecking Sober and its Flatpak runtime for updates...\n'
+  if ! flatpak update "--$APP_SCOPE" --assumeyes "$APP_ID"; then
+    printf 'BOLT Sober: update check failed; continuing with the installed build.\n' >&2
+  fi
+}
+
+show_logs() {
+  local latest=""
+  if [[ -d "$BOLT_LOG_DIR" ]]; then
+    latest="$(find "$BOLT_LOG_DIR" -maxdepth 1 -type f -name 'sober-launch-*.log' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d ' ' -f 2-)"
+  fi
+  if [[ -n "$latest" && -f "$latest" ]]; then
+    printf 'Latest BOLT launch output (%s):\n' "$latest"
+    tail -n 120 "$latest"
+  else
+    printf 'No BOLT launch log exists yet. '
+    printf 'Sober''s own logs are stored in %s\n' "$SOBER_LOG_DIR"
+  fi
+  if [[ -d "$SOBER_LOG_DIR" ]]; then
+    printf '\nSober internal log files:\n'
+    find "$SOBER_LOG_DIR" -maxdepth 1 -type f -printf '%TY-%Tm-%Td %TH:%TM %p\n' 2>/dev/null | sort -r | head -n 10
+  fi
+}
+
+reset_user_install() {
+  if ! flatpak info --user "$APP_ID" >/dev/null 2>&1; then
+    printf 'No per-user Sober installation exists to reset.\n'
+    return 0
+  fi
+  printf 'This removes the per-user Sober app AND its downloaded Roblox data/configuration.\n'
+  read -r -p 'Type RESET to continue: ' answer
+  [[ "$answer" == RESET ]] || { printf 'Reset cancelled.\n'; return 0; }
+  flatpak uninstall --user --delete-data --assumeyes "$APP_ID"
+}
+
+run_sober() {
+  local launch_log status
+  mkdir -p "$BOLT_LOG_DIR"
+  launch_log="$BOLT_LOG_DIR/sober-launch-$(date +%Y%m%d-%H%M%S).log"
+  printf '\nLaunching Sober. Output is also saved to:\n%s\n\n' "$launch_log"
+  status=0
+  set +e
+  flatpak run "$APP_ID" 2>&1 | tee "$launch_log"
+  status="\${PIPESTATUS[0]}"
+  set -e
+  if (( status != 0 )); then
+    printf '\nSober exited with status %s. Run bolt-install-roblox --diagnose and --logs.\n' "$status" >&2
+    printf 'If Vulkan is missing, try: bolt-install-roblox --opengl\n' >&2
+  fi
+  return "$status"
+}
+
+main() {
+  local mode="\${1:---launch}"
+  case "$mode" in
+    --help|-h) usage; return 0 ;;
+    --diagnose) show_diagnostics; return 0 ;;
+    --logs) show_logs; return 0 ;;
+    --enable-opengl) enable_opengl; return $? ;;
+    --opengl)
+      ensure_flatpak_app || return $?
+      enable_opengl || return $?
+      show_diagnostics
+      run_sober
+      return $? ;;
+    --reset)
+      command -v flatpak >/dev/null 2>&1 || { fail 'Flatpak is not installed.'; return 1; }
+      reset_user_install || return $?
+      ;;
+    --launch) ;;
+    *) usage >&2; return 2 ;;
+  esac
+
+  if ! have_cpu_flag sse4_1; then
+    show_diagnostics
+    fail 'This CPU is below Sober''s documented SSE4.1 minimum. A launcher/config workaround cannot fix missing CPU instructions.'
+    return 1
+  fi
+
+  ensure_flatpak_app || return $?
+  show_diagnostics
+
+  if ! has_vulkan_device; then
+    printf '\nSober may fall back to OpenGL automatically. Its documentation also exposes use_opengl=true.\n'
+    read -r -p 'Try the explicit OpenGL fallback now? [y/N] ' answer
+    case "\${answer,,}" in
+      y|yes) enable_opengl || return $? ;;
+      *) printf 'Keeping Sober''s default renderer setting.\n' ;;
+    esac
+  fi
+
+  run_sober
+}
+
+main "\${1:---launch}"

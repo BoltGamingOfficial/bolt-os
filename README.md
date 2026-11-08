@@ -8,9 +8,10 @@ BOLT uses official Arch package repositories as its binary package source, but o
 
 - KDE Plasma with a focused desktop shell, panel, launcher, system tray, network and audio applets, display controls, and power settings. The Xorg server is retained for SDDM greeter compatibility; the intended desktop session is Wayland.
 - Firefox and Prism Launcher for browsing and Minecraft instances.
+- **Kate** opens plain text, source code, logs and configuration files; **VLC** is the default audio/video player for common containers and codecs; **Gwenview** is the default image viewer. Qt/KDE image-format plugins, VLC extra plugins, and Dolphin video/image thumbnail providers broaden format support. Unrecognized extensions can still be opened with the app's Open With menu.
 - Steam plus Lutris for PC game libraries. Lutris is the single additional PC game launcher.
 - Wine, Wine Gecko/Mono and Winetricks for running and configuring many Windows applications. Compatibility varies; games using unsupported anti-cheat systems may not work through Wine.
-- A **Roblox (Sober)** menu shortcut. On first launch it asks before installing the unofficial Sober Flatpak for the current user. Sober is closed-source, experimental community software, not made or supported by Roblox; it runs Roblox through a specialized Android runtime and can stop working after Roblox updates.
+- A **Roblox (Sober)** menu shortcut with CPU/VM/GPU/Vulkan/Flatpak/portal diagnostics, launch-log capture, and an optional documented OpenGL fallback. On first launch it asks before installing the unofficial Sober Flatpak for the current user. Sober is closed-source, experimental community software, not made or supported by Roblox; it runs Roblox through a specialized Android runtime and can stop working after Roblox updates.
 - Vulkan/OpenGL userspace for Intel and AMD Mesa drivers, plus NVIDIA's open kernel-module driver and matching userspace. 32-bit graphics and audio libraries are included for Steam/Proton.
 - GameMode, Gamescope, and MangoHud.
 - NetworkManager, PipeWire/WirePlumber, power-profiles-daemon, and zram compressed swap for occasional memory pressure. Bluetooth is not installed or started.
@@ -18,6 +19,10 @@ BOLT uses official Arch package repositories as its binary package source, but o
 - A TTY first-run account wizard that collects a username, password and confirmation, timezone, and XKB keyboard layout before SDDM may start.
 
 No AI agents, usage telemetry, advertising, or background game launchers are included. Firefox, Prism Launcher, Wine and Winetricks are installed but do not start automatically. The Sober runtime is downloaded only when the user opens the Roblox shortcut and accepts the notice. Steam, Lutris, Gamescope, and MangoHud do not start automatically.
+
+## File handling
+
+New accounts default to Kate for common text and source/configuration MIME types, VLC for common audio/video types, and Gwenview for common image types. VLC's extra plugin package and the KDE/Qt image plugins add format coverage. No single player or image viewer can decode every proprietary, damaged, encrypted, or unusual format; use Dolphin's **Open With** option for unknown extensions and install a compatible codec/plugin when needed.
 
 ## First boot and security
 
