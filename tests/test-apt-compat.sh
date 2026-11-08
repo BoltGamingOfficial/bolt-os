@@ -17,17 +17,30 @@ exec "$@"
 STUB
 chmod +x "$TMP_DIR/bin/pacman" "$TMP_DIR/bin/sudo"
 export PATH="$TMP_DIR/bin:$PATH"
+
+assert_call() {
+  local expected="$*"
+  local actual
+  local -a captured=()
+  mapfile -t captured < "$BOLT_APT_TEST_LOG"
+  actual="${captured[*]}"
+  if [[ "$actual" != "$expected" ]]; then
+    printf 'Expected: %s\nActual:   %s\n' "$expected" "$actual" >&2
+    return 1
+  fi
+}
+
 : > "$BOLT_APT_TEST_LOG"
 "$SCRIPT" install --yes firefox
-printf 'pacman\n-Syu\n--needed\n--noconfirm\nfirefox\n' > "$TMP_DIR/expected"
-diff -u "$TMP_DIR/expected" "$BOLT_APT_TEST_LOG"
+assert_call pacman -Syu --needed --noconfirm firefox
+
 : > "$BOLT_APT_TEST_LOG"
 "$SCRIPT" search prism
-printf 'pacman\n-Ss\nprism\n' > "$TMP_DIR/expected"
-diff -u "$TMP_DIR/expected" "$BOLT_APT_TEST_LOG"
+assert_call pacman -Ss prism
+
 : > "$BOLT_APT_TEST_LOG"
 "$SCRIPT" remove --assume-yes firefox
-printf 'pacman\n-Rns\n--noconfirm\nfirefox\n' > "$TMP_DIR/expected"
-diff -u "$TMP_DIR/expected" "$BOLT_APT_TEST_LOG"
+assert_call pacman -Rns --noconfirm firefox
+
 "$SCRIPT" help >/dev/null
 printf 'PASS: apt-style commands translate to safe pacman operations\n'
