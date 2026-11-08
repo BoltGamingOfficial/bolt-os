@@ -141,7 +141,7 @@ arch-chroot "$ROOTFS" visudo -cf /etc/sudoers
 log 'Validating package manager and application launchers.'
 arch-chroot "$ROOTFS" sudo --version >/dev/null
 arch-chroot "$ROOTFS" pacman --version >/dev/null
-arch-chroot "$ROOTFS" konsole --version >/dev/null
+# Konsole is checked as an installed executable above; do not launch Qt GUI in the headless build chroot.
 for executable in firefox prismlauncher wine winetricks flatpak; do
   [[ -x "$ROOTFS/usr/bin/$executable" ]] || fail "application disappeared from rootfs: $executable"
 done
