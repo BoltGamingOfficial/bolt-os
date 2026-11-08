@@ -7,14 +7,17 @@ BOLT uses official Arch package repositories as its binary package source, but o
 ## What is included
 
 - KDE Plasma with a focused desktop shell, panel, launcher, system tray, network and audio applets, display controls, and power settings. The Xorg server is retained for SDDM greeter compatibility; the intended desktop session is Wayland.
-- Steam plus Lutris. Lutris is the single additional game launcher: it covers non-Steam libraries and game installers without adding multiple overlapping launcher frontends.
+- Firefox and Prism Launcher for browsing and Minecraft instances.
+- Steam plus Lutris for PC game libraries. Lutris is the single additional PC game launcher.
+- Wine, Wine Gecko/Mono and Winetricks for running and configuring many Windows applications. Compatibility varies; games using unsupported anti-cheat systems may not work through Wine.
+- A **Roblox (Sober)** menu shortcut. On first launch it asks before installing the unofficial Sober Flatpak for the current user. Sober is closed-source, experimental community software, not made or supported by Roblox; it runs Roblox through a specialized Android runtime and can stop working after Roblox updates.
 - Vulkan/OpenGL userspace for Intel and AMD Mesa drivers, plus NVIDIA's open kernel-module driver and matching userspace. 32-bit graphics and audio libraries are included for Steam/Proton.
 - GameMode, Gamescope, and MangoHud.
 - NetworkManager, PipeWire/WirePlumber, and power-profiles-daemon. Bluetooth is not installed or started.
 - Gold-and-black BOLT branding in the Limine menu, SDDM theme, and Plasma wallpaper.
 - A TTY first-run account wizard that collects a username, password and confirmation, timezone, and XKB keyboard layout before SDDM may start.
 
-No AI agents, usage telemetry, advertising, or background game launchers are included. Steam, Lutris, Gamescope, and MangoHud do not start automatically.
+No AI agents, usage telemetry, advertising, or background game launchers are included. Firefox, Prism Launcher, Wine and Winetricks are installed but do not start automatically. The Sober runtime is downloaded only when the user opens the Roblox shortcut and accepts the notice. Steam, Lutris, Gamescope, and MangoHud do not start automatically.
 
 ## First boot and security
 
@@ -22,9 +25,22 @@ There is no pre-created desktop account and no default password. The root accoun
 
 If setup is cancelled or fails, SDDM remains blocked. Reboot to retry the first-run wizard.
 
+## Terminal and package management
+
+BOLT OS is Arch-based, not Debian-based. Use **pacman**, not **apt**. Examples:
+
+```sh
+sudo pacman -Syu                 # update installed packages
+sudo pacman -S firefox           # install a package
+sudo pacman -S prismlauncher wine winetricks
+pacman -Qs firefox               # search installed packages
+```
+
+The `sudo` package is part of the image and the first-run account is added to `wheel`. The system login environment explicitly includes `/usr/bin` in `PATH`. There is no fake `apt` compatibility command.
+
 ## Live-image behavior
 
-The image is ephemeral. The writable overlay is a tmpfs whose configured upper bound is 50% of detected physical RAM; tmpfs allocates memory as files are written, so the cap is not pre-reserved RAM and is not disk capacity. Changes are lost on reboot. The build report records ISO and compressed/uncompressed image sizes; idle RAM and installed disk footprint are deliberately not reported until measured on a booted system and a tested installer exists.
+The image is ephemeral. The writable overlay is a tmpfs whose configured upper bound is 50% of detected physical RAM; tmpfs allocates memory as files are written, so the cap is not pre-reserved RAM and is not disk capacity. Changes are lost on reboot. A Plasma desktop plus Firefox, Wine, game launchers and Vulkan libraries cannot run in megabytes of RAM. Boot and startup are being optimized, but idle RAM must be measured on real hardware before publishing a number. The build report records ISO and compressed/uncompressed image sizes; idle RAM and installed disk footprint are deliberately not reported until measured on a booted system and a tested installer exists.
 
 ## Hardware scope
 

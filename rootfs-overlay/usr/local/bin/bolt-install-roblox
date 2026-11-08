@@ -1,0 +1,29 @@
+#!/usr/bin/bash
+set -Eeuo pipefail
+
+APP_ID="org.vinegarhq.Sober"
+FLATHUB_URL="https://dl.flathub.org/repo/flathub.flatpakrepo"
+
+if ! command -v flatpak >/dev/null 2>&1; then
+  printf 'BOLT OS: Flatpak is not installed. Reinstall or update to a current BOLT OS image.\n' >&2
+  exit 127
+fi
+
+if flatpak info --user "$APP_ID" >/dev/null 2>&1; then
+  exec flatpak run --user "$APP_ID"
+fi
+
+printf '\nBOLT OS — Roblox launcher\n\n'
+printf 'This installs Sober from Flathub for your user account.\n'
+printf 'Sober is unofficial, closed-source, experimental community software.\n'
+printf 'It is not made, endorsed or supported by Roblox, and may stop working after updates.\n'
+printf 'The first install downloads the app and its runtime and requires an internet connection.\n\n'
+read -r -p 'Continue with the Sober installation? [y/N] ' answer
+case "${answer,,}" in
+  y|yes) ;;
+  *) printf 'Installation cancelled.\n'; exit 0 ;;
+esac
+
+flatpak remote-add --user --if-not-exists flathub "$FLATHUB_URL"
+flatpak install --user --assumeyes flathub "$APP_ID"
+exec flatpak run --user "$APP_ID"

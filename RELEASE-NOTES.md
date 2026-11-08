@@ -1,4 +1,4 @@
-# BOLT OS 0.2.0-dev — release notes
+# BOLT OS 0.3.0-dev — release notes
 
 ## Engineering changes
 
@@ -22,3 +22,12 @@
 - No idle RAM or installed disk-footprint benchmark until those measurements can be run against an actually booted image and an installable target.
 
 This is an experimental development build recipe, not a release candidate or stable distribution.
+
+
+## 0.3.0-dev
+
+- Bundled Firefox, Prism Launcher, Wine, Wine Gecko/Mono, Winetricks, and Flatpak.
+- Added an opt-in Roblox (Sober) menu shortcut that installs the unofficial Flathub client per-user after an explicit prompt.
+- Fixed login PATH setup and added build/runtime checks for sudo and pacman.
+- Shortened the Limine countdown, stopped preloading NVIDIA modules on every device, and tuned compression for faster startup.
+- Added application and boot-time checks to the runtime smoke test.

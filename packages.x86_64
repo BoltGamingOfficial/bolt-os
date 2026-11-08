@@ -48,6 +48,15 @@ pipewire-alsa
 pipewire-pulse
 wireplumber
 
+# Everyday apps and Windows compatibility
+firefox
+prismlauncher
+wine
+wine-gecko
+wine-mono
+winetricks
+flatpak
+
 # Gaming
 steam
 lutris

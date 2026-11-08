@@ -29,6 +29,7 @@ jobs:
         run: |
           shellcheck build.sh tests/*.sh \
             rootfs-overlay/usr/local/bin/bolt-preset \
+            rootfs-overlay/usr/local/bin/bolt-install-roblox \
             rootfs-overlay/usr/local/libexec/bolt-first-run \
             rootfs-overlay/usr/local/libexec/bolt-set-wallpaper-once \
             mkinitcpio/install/bolt_live mkinitcpio/hooks/bolt_live

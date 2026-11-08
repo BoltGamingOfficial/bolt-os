@@ -11,17 +11,22 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 [[ -s "$ROOT_DIR/mkinitcpio/install/bolt_live" ]] || fail 'BOLT live initramfs installer hook missing'
 [[ -s "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" ]] || fail 'first-run program missing'
 [[ -x "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" ]] || fail 'first-run program must be executable'
+[[ -s "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" ]] || fail 'Roblox installer launcher missing'
+[[ -x "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" ]] || fail 'Roblox installer launcher must be executable'
+[[ -s "$ROOT_DIR/rootfs-overlay/usr/share/applications/bolt-roblox.desktop" ]] || fail 'Roblox menu entry missing'
+[[ -s "$ROOT_DIR/rootfs-overlay/etc/environment" ]] || fail 'system environment file missing'
+grep -Fxq 'PATH=/usr/local/sbin:/usr/local/bin:/usr/bin' "$ROOT_DIR/rootfs-overlay/etc/environment" || fail 'system PATH must include /usr/bin'
 
-mapfile -t scripts < <(find "$ROOT_DIR" -type f \( -name '*.sh' -o -path '*/usr/local/bin/bolt-preset' -o -path '*/usr/local/libexec/bolt-first-run' -o -path '*/usr/local/libexec/bolt-set-wallpaper-once' -o -path '*/mkinitcpio/hooks/bolt_live' -o -path '*/mkinitcpio/install/bolt_live' \) -print | sort)
+mapfile -t scripts < <(find "$ROOT_DIR" -type f \( -name '*.sh' -o -path '*/usr/local/bin/bolt-preset' -o -path '*/usr/local/bin/bolt-install-roblox' -o -path '*/usr/local/libexec/bolt-first-run' -o -path '*/usr/local/libexec/bolt-set-wallpaper-once' -o -path '*/mkinitcpio/hooks/bolt_live' -o -path '*/mkinitcpio/install/bolt_live' \) -print | sort)
 for script in "${scripts[@]}"; do bash -n "$script" || fail "shell syntax: $script"; done
 
 packages="$ROOT_DIR/packages.x86_64"
 duplicates="$(grep -Ev '^[[:space:]]*(#|$)' "$packages" | LC_ALL=C sort | uniq -d)"
 [[ -z "$duplicates" ]] || fail "duplicate packages: $duplicates"
-for package in base mkinitcpio linux linux-firmware networkmanager wpa_supplicant dbus-broker-units kbd xkeyboard-config plasma-desktop sddm xorg-server steam lutris gamemode gamescope mangohud mesa lib32-mesa vulkan-intel vulkan-radeon lib32-vulkan-intel lib32-vulkan-radeon nvidia-open nvidia-utils lib32-nvidia-utils; do
+for package in base mkinitcpio linux linux-firmware networkmanager wpa_supplicant dbus-broker-units kbd xkeyboard-config plasma-desktop sddm xorg-server sudo firefox prismlauncher wine wine-gecko wine-mono winetricks flatpak steam lutris gamemode gamescope mangohud mesa lib32-mesa vulkan-intel vulkan-radeon lib32-vulkan-intel lib32-vulkan-radeon nvidia-open nvidia-utils lib32-nvidia-utils; do
   grep -Fxq "$package" "$packages" || fail "required package missing: $package"
 done
-for forbidden in bluez firefox prismlauncher archiso mkarchiso opencode ollama; do
+for forbidden in bluez archiso mkarchiso opencode ollama; do
   if grep -Fxq "$forbidden" "$packages"; then fail "unexpected package in minimal manifest: $forbidden"; fi
 done
 
@@ -50,6 +55,12 @@ fi
 grep -Fq 'BOLT_LIVE' "$ROOT_DIR/mkinitcpio/hooks/bolt_live" || fail 'custom boot medium label missing'
 grep -Fq 'MemTotal:' "$ROOT_DIR/mkinitcpio/hooks/bolt_live" || fail 'memory-aware overlay sizing missing'
 grep -Fq 'newroot=/newroot' "$ROOT_DIR/mkinitcpio/hooks/bolt_live" || fail 'new root must not be nested inside /run before moving /run'
+grep -Fq 'timeout: 2' "$ROOT_DIR/limine.conf" || fail 'Limine should use a short boot menu countdown'
+grep -Fq 'COMPRESSION_OPTIONS=(-3)' "$ROOT_DIR/mkinitcpio/bolt-live.conf" || fail 'initramfs should use fast zstd compression'
+if grep -Eq '^MODULES=.*nvidia' "$ROOT_DIR/mkinitcpio/bolt-live.conf"; then fail 'NVIDIA modules must not be forced into every initramfs'; fi
+grep -Fq 'org.vinegarhq.Sober' "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" || fail 'Roblox launcher must target Sober'
+grep -Fq 'https://dl.flathub.org/repo/flathub.flatpakrepo' "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" || fail 'Roblox launcher must use Flathub'
+grep -Fq 'unofficial' "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" || fail 'Roblox launcher must disclose unofficial status'
 if grep -Fq 'newroot=/run/' "$ROOT_DIR/mkinitcpio/hooks/bolt_live"; then fail 'new root is nested under /run'; fi
 
 if grep -RniE 'archiso|mkarchiso|install_dir="arch"|AI Hub|OpenCode' \

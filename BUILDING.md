@@ -16,7 +16,7 @@ Clone and build from `main`:
 git clone https://github.com/BoltGamingOfficial/bolt-os.git
 cd bolt-os
 git switch main
-sudo env BOLT_VERSION=0.2.0-dev \
+sudo env BOLT_VERSION=0.3.0-dev \
   DELIVERY_DIR="$PWD/BOLT-OS-DELIVERY" \
   WORK_DIR="/var/tmp/bolt-os-build" \
   ./build.sh
@@ -38,7 +38,7 @@ Verify the checksum:
 
 ```sh
 cd BOLT-OS-DELIVERY/iso
-sha256sum -c ../checksums/BOLT-OS-0.2.0-dev-x86_64.iso.sha256
+sha256sum -c ../checksums/BOLT-OS-0.3.0-dev-x86_64.iso.sha256
 ```
 
 ## Boot architecture
@@ -52,7 +52,21 @@ The live initramfs and ISO boot entries are BOLT-defined. Arch packages remain t
 - `steam` comes from the multilib repository. The build always enables multilib in its temporary package-manager configuration without changing the host configuration.
 - Intel and AMD Vulkan stacks use `vulkan-intel`, `vulkan-radeon`, and their `lib32-` packages.
 - NVIDIA uses `nvidia-open` plus matching `nvidia-utils` and `lib32-nvidia-utils`, not multiple NVIDIA driver branches. This choice is for Turing-and-newer hardware; Maxwell, Pascal, and Volta-era GPUs are not claimed to be supported by this official-repository-only build.
-- Lutris is the only extra launcher beyond Steam. GameMode, Gamescope, and MangoHud provide game-session optimization, compositor support, and overlays without persistent background services.
+- Firefox and Prism Launcher are bundled for everyday browsing and Minecraft instances.
+- Wine, Wine Gecko/Mono, and Winetricks provide Windows application compatibility; they do not bypass unsupported anti-cheat systems.
+- Flatpak is installed. The Roblox (Sober) desktop shortcut offers a per-user Flathub install on demand; Sober is unofficial, proprietary, experimental community software, not Roblox-supported.
+- Lutris is the additional PC game-library manager beyond Steam. GameMode, Gamescope, and MangoHud provide game-session optimization, compositor support, and overlays without persistent background services.
+
+## Terminal and package manager
+
+BOLT is based on Arch Linux. Package commands use pacman, not apt:
+
+```sh
+sudo pacman -Syu
+sudo pacman -S firefox prismlauncher wine winetricks
+```
+
+The image includes the sudo package and places /usr/bin on the default login PATH. Runtime smoke tests check sudo, pacman and the bundled applications.
 
 ## VM and hardware test
 
@@ -60,7 +74,7 @@ A boot test requires QEMU with OVMF firmware on a host with virtualization enabl
 
 ```sh
 QEMU_REPORT_DIR="$PWD/BOLT-OS-DELIVERY/testing" \
-  bash tests/qemu-uefi-smoke.sh "$PWD/BOLT-OS-DELIVERY/iso/BOLT-OS-0.2.0-dev-x86_64.iso"
+  bash tests/qemu-uefi-smoke.sh "$PWD/BOLT-OS-DELIVERY/iso/BOLT-OS-0.3.0-dev-x86_64.iso"
 ```
 
 The Arch `edk2-ovmf` package installs split UEFI firmware under `/usr/share/edk2/x64/OVMF_CODE.4m.fd` and `OVMF_VARS.4m.fd`; the included QEMU smoke script locates the pair automatically. First-run setup is intentionally interactive. After account creation and desktop login, run:
@@ -69,7 +83,7 @@ The Arch `edk2-ovmf` package installs split UEFI firmware under `/usr/share/edk2
 /usr/local/share/bolt-os/tests/vm-smoke-test.sh
 ```
 
-The smoke test records memory, boot timing, resident processes, services, and core application availability. It does not replace manual display/audio tests, a Vulkan renderer check, Steam game launch, or hardware validation on each GPU vendor.
+The smoke test records memory, boot timing, resident processes, services, sudo/pacman availability, and the bundled applications. The Limine countdown is shortened to two seconds, NVIDIA modules are no longer forced into every initramfs, and initramfs/SquashFS compression settings are tuned toward faster startup. This is not a claim that a Plasma gaming desktop can run in megabytes of RAM; idle memory is still measured on a booted system. It does not replace manual display/audio tests, a Vulkan renderer check, Steam game launch, or hardware validation on each GPU vendor.
 
 ## Scope limitations
 

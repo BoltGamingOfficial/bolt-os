@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Roblox (Sober)
+GenericName=Roblox game client
+Comment=Install and launch the unofficial Sober Roblox runtime
+Exec=konsole --hold -e /usr/local/bin/bolt-install-roblox
+Icon=applications-games
+Terminal=false
+Categories=Game;
+StartupNotify=true

@@ -37,6 +37,14 @@ root_locked() { [[ "$(passwd -S root | awk '{print $2}')" == L ]]; }
 check 'root account is locked' root_locked
 sudo_requires_authentication() { ! grep -Rqs 'NOPASSWD' /etc/sudoers /etc/sudoers.d; }
 check 'sudo requires authentication' sudo_requires_authentication
+check 'sudo command is available' command -v sudo
+check 'pacman package manager is available' command -v pacman
+check 'Firefox is installed' command -v firefox
+check 'Prism Launcher is installed' command -v prismlauncher
+check 'Wine is installed' command -v wine
+check 'Winetricks is installed' command -v winetricks
+check 'Flatpak is installed' command -v flatpak
+check 'Roblox (Sober) installer launcher is available' test -x /usr/local/bin/bolt-install-roblox
 
 printf '\nGraphics and Vulkan:\n'
 if command -v vulkaninfo >/dev/null 2>&1; then vulkaninfo --summary 2>&1 || true; else printf 'vulkaninfo missing\n'; fi

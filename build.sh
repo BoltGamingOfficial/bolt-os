@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-BOLT_VERSION="${BOLT_VERSION:-0.2.0-dev}"
+BOLT_VERSION="${BOLT_VERSION:-0.3.0-dev}"
 DELIVERY_DIR="${DELIVERY_DIR:-$ROOT_DIR/BOLT-OS-DELIVERY}"
 WORK_DIR="${WORK_DIR:-$DELIVERY_DIR/work}"
 ROOTFS="$WORK_DIR/rootfs"
@@ -45,6 +45,7 @@ log "Starting BOLT OS $BOLT_VERSION build on $(uname -m)"
 "$ROOT_DIR/tests/test-bolt-preset.sh"
 shellcheck "$ROOT_DIR/build.sh" "$ROOT_DIR/tests/"*.sh \
   "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-preset" \
+  "$ROOT_DIR/rootfs-overlay/usr/local/bin/bolt-install-roblox" \
   "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-first-run" \
   "$ROOT_DIR/rootfs-overlay/usr/local/libexec/bolt-set-wallpaper-once" \
   "$ROOT_DIR/mkinitcpio/install/bolt_live" "$ROOT_DIR/mkinitcpio/hooks/bolt_live"
@@ -83,8 +84,14 @@ mkdir -p "$ROOTFS" "$ISO_ROOT/BOLT/boot" "$ISO_ROOT/boot/limine" "$ISO_ROOT/EFI/
 log 'Installing the minimal system to the isolated root filesystem.'
 pacstrap -K -C "$PACMAN_CONF" "$ROOTFS" "${PACKAGES[@]}"
 
+for executable in sudo pacman firefox prismlauncher wine winetricks flatpak; do
+  [[ -x "$ROOTFS/usr/bin/$executable" ]] || fail "required application executable was not installed: $executable"
+done
+
 log 'Applying BOLT root filesystem overlay and first-boot policy.'
 cp -a "$ROOT_DIR/rootfs-overlay/." "$ROOTFS/"
+[[ -x "$ROOTFS/usr/local/bin/bolt-install-roblox" ]] || fail 'Roblox installer launcher is not executable'
+grep -Fxq 'PATH=/usr/local/sbin:/usr/local/bin:/usr/bin' "$ROOTFS/etc/environment" || fail 'system PATH configuration is missing /usr/bin'
 install -D -m 0644 "$ROOT_DIR/branding/bolt-wallpaper.svg" "$ROOTFS/usr/share/wallpapers/BOLT.svg"
 install -D -m 0644 "$ROOT_DIR/branding/bolt-logo.svg" "$ROOTFS/usr/share/pixmaps/bolt-logo.svg"
 install -D -m 0755 "$ROOT_DIR/tests/vm-smoke-test.sh" "$ROOTFS/usr/local/share/bolt-os/tests/vm-smoke-test.sh"
@@ -125,6 +132,13 @@ printf 'LANG=en_US.UTF-8\n' > "$ROOTFS/etc/locale.conf"
 arch-chroot "$ROOTFS" locale-gen
 arch-chroot "$ROOTFS" passwd -l root
 arch-chroot "$ROOTFS" visudo -cf /etc/sudoers
+
+log 'Validating package manager and application launchers.'
+"$ROOTFS/usr/bin/sudo" --version >/dev/null
+"$ROOTFS/usr/bin/pacman" --version >/dev/null
+for executable in firefox prismlauncher wine winetricks flatpak; do
+  [[ -x "$ROOTFS/usr/bin/$executable" ]] || fail "application disappeared from rootfs: $executable"
+done
 
 log 'Enabling only the desktop, network, power-profile, and first-run services.'
 systemctl --root="$ROOTFS" enable dbus.socket
@@ -172,7 +186,7 @@ rm -f -- "$ROOTFS/boot/"*
 log 'Measuring and creating the compressed system image.'
 ROOTFS_BYTES="$(du -s --bytes "$ROOTFS" | awk '{print $1}')"
 printf 'BOLT root filesystem (uncompressed): %s bytes\n' "$ROOTFS_BYTES"
-mksquashfs "$ROOTFS" "$ISO_ROOT/BOLT/system.squashfs" -comp zstd -Xcompression-level 15 -b 1M -noappend -processors "$(getconf _NPROCESSORS_ONLN)" -no-progress
+mksquashfs "$ROOTFS" "$ISO_ROOT/BOLT/system.squashfs" -comp zstd -Xcompression-level 6 -b 1M -noappend -processors "$(getconf _NPROCESSORS_ONLN)" -no-progress
 
 log 'Staging the independent Limine UEFI boot tree.'
 install -m 0644 "$ROOT_DIR/limine.conf" "$ISO_ROOT/boot/limine/limine.conf"
@@ -189,6 +203,8 @@ Architecture: x86_64
 Boot manager: Limine (UEFI El Torito plus GPT EFI system partition)
 Kernel: $KERNEL_VERSION
 Package source: official Arch repositories (core/extra/multilib)
+Bundled apps: Firefox, Prism Launcher, Wine, Winetricks, Flatpak
+Roblox: optional per-user Sober installer shortcut (Flathub; unofficial)
 Boot layout: /BOLT/boot plus /BOLT/system.squashfs
 Writable live overlay: tmpfs capped at 50% of detected physical RAM; not disk storage
 INFO
