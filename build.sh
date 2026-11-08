@@ -134,8 +134,8 @@ arch-chroot "$ROOTFS" passwd -l root
 arch-chroot "$ROOTFS" visudo -cf /etc/sudoers
 
 log 'Validating package manager and application launchers.'
-"$ROOTFS/usr/bin/sudo" --version >/dev/null
-"$ROOTFS/usr/bin/pacman" --version >/dev/null
+arch-chroot "$ROOTFS" sudo --version >/dev/null
+arch-chroot "$ROOTFS" pacman --version >/dev/null
 for executable in firefox prismlauncher wine winetricks flatpak; do
   [[ -x "$ROOTFS/usr/bin/$executable" ]] || fail "application disappeared from rootfs: $executable"
 done
