@@ -36,28 +36,28 @@ translate_yes() {
     case "$arg" in -y|--yes|--assume-yes) pacman_args+=(--noconfirm) ;; *) pacman_args+=("$arg") ;; esac
   done
 }
-operation="\${1:-help}"
+operation="${1:-help}"
 if (( $# > 0 )); then shift; fi
 case "$operation" in
   update|upgrade|full-upgrade|dist-upgrade)
     printf 'BOLT OS: performing a full Arch Linux system upgrade.\n'
     translate_yes "$@"
-    run_privileged -Syu "\${pacman_args[@]}"
+    run_privileged -Syu "${pacman_args[@]}"
     ;;
   install)
     (( $# > 0 )) || { usage >&2; exit 2; }
     translate_yes "$@"
-    run_privileged -Syu --needed "\${pacman_args[@]}"
+    run_privileged -Syu --needed "${pacman_args[@]}"
     ;;
   remove|purge)
     (( $# > 0 )) || { usage >&2; exit 2; }
     translate_yes "$@"
-    run_privileged -Rns "\${pacman_args[@]}"
+    run_privileged -Rns "${pacman_args[@]}"
     ;;
   search) (( $# > 0 )) || { usage >&2; exit 2; }; exec pacman -Ss "$@" ;;
   show) (( $# > 0 )) || { usage >&2; exit 2; }; exec pacman -Si "$@" ;;
   list)
-    case "\${1:-}" in
+    case "${1:-}" in
       --installed) shift; exec pacman -Q "$@" ;;
       --upgradable) shift; exec pacman -Qu "$@" ;;
       "") exec pacman -Q ;;
@@ -66,10 +66,10 @@ case "$operation" in
     ;;
   autoremove)
     mapfile -t orphans < <(pacman -Qtdq 2>/dev/null || true)
-    if (( \${#orphans[@]} == 0 )); then printf 'No orphan packages to remove.\n'; exit 0; fi
-    run_privileged -Rns "\${orphans[@]}"
+    if (( ${#orphans[@]} == 0 )); then printf 'No orphan packages to remove.\n'; exit 0; fi
+    run_privileged -Rns "${orphans[@]}"
     ;;
-  clean|autoclean) translate_yes "$@"; run_privileged -Sc "\${pacman_args[@]}" ;;
+  clean|autoclean) translate_yes "$@"; run_privileged -Sc "${pacman_args[@]}" ;;
   help|-h|--help) usage ;;
   *) printf 'Unknown apt-style command: %s\n' "$operation" >&2; usage >&2; exit 2 ;;
 esac
