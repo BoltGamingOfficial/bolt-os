@@ -1,5 +1,9 @@
 # BOLT OS 0.3.1-dev — release notes
 
+## Build artifact security and delivery
+- CI now refreshes ClamAV signatures and scans the unpacked root filesystem before upload; a detection blocks publication.
+- The ISO and its checksum are published as individual unzipped GitHub Actions artifacts, avoiding an extra ZIP wrapper that can trigger browser Safe Browsing false positives.
+
 ## Desktop and everyday applications
 - Added Kate as the default text/source/configuration viewer and editor.
 - Added VLC with its extra plugin collection as the default player for common audio and video containers/codecs.

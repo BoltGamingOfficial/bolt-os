@@ -24,7 +24,9 @@ sudo env BOLT_VERSION=0.3.1-dev \
 
 The build creates a temporary pacman configuration containing only the official `core`, `extra`, and `multilib` repositories, so it does not require changing the host pacman configuration. It exits before rootfs creation if the host is not Arch Linux, required tools are missing, or any package in `packages.x86_64` cannot be resolved through the configured official repositories. It invokes ShellCheck and the local source/unit tests before package installation. It does not run an unverified third-party installer or modify a target disk.
 
-The build creates:
+The GitHub Actions pipeline also refreshes ClamAV signatures and scans the unpacked root filesystem before publishing. On success, it publishes the ISO and SHA-256 checksum as separate direct (non-ZIP) artifacts; the ISO download is the `.iso` itself.
+
+The local build creates:
 
 ```text
 BOLT-OS-DELIVERY/
@@ -34,7 +36,7 @@ BOLT-OS-DELIVERY/
   testing/      ISO structure report, file listing, and size measurements
 ```
 
-Verify the checksum:
+Verify the ISO checksum (the direct GitHub Actions checksum artifact has the same contents):
 
 ```sh
 cd BOLT-OS-DELIVERY/iso
